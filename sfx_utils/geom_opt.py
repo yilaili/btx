@@ -9,7 +9,7 @@ class GeomOpt:
                                   run=run, # run number, int
                                   det_type=det_type) # detector name, string
         
-    def _compute_powder(self, n_images=100, ptype='max'):
+    def _compute_powder(self, n_images=500, ptype='max'):
         """
         Compute the powder from the first n_images of the run, either by taking
         the maximum or average value of each pixel across the image series.
@@ -32,7 +32,7 @@ class GeomOpt:
         else:
             return np.mean(self.psi.get_images(n_images), axis=0)
     
-    def opt_distance(self, sample='AgBehenate', n_images=100, plot=False):
+    def opt_distance(self, sample='AgBehenate', n_images=500, plot=False):
         """
         Estimate the sample-detector distance based on the properties of the powder
         diffraction image. Currently only implemented for silver behenate.
