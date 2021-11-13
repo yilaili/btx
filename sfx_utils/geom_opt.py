@@ -8,11 +8,13 @@ class GeomOpt:
         self.psi = PsanaInterface(exp=exp, # experiment name, string
                                   run=run, # run number, int
                                   det_type=det_type) # detector name, string
+        self.powder = None # for storing powder on the fly
         
-    def _compute_powder(self, n_images=500, ptype='max'):
+    def compute_powder(self, n_images=500, ptype='max'):
         """
         Compute the powder from the first n_images of the run, either by taking
-        the maximum or average value of each pixel across the image series.
+        the maximum or average value of each pixel across the image series. The
+        powder will be stored as a self variable and ovewrite any stored powder.
         
         Parameters
         ----------
@@ -28,11 +30,13 @@ class GeomOpt:
             powder diffraction image, in shape of assembled detector
         """
         if ptype == 'max':
-            return np.amax(self.psi.get_images(n_images), axis=0)
+            self.powder = np.amax(self.psi.get_images(n_images), axis=0)
         elif ptype == 'mean':
-            return np.mean(self.psi.get_images(n_images), axis=0)
+            self.powder = np.mean(self.psi.get_images(n_images), axis=0)
         else:
             raise ValueError("Invalid powder type, must be max or mean")
+
+        return self.powder
 
     def opt_distance(self, sample='AgBehenate', n_images=500, center=None, plot=False):
         """
@@ -55,7 +59,8 @@ class GeomOpt:
         distance : float
             estimated sample-detector distance in mm
         """
-        powder = self._compute_powder(n_images)
+        if self.powder is None:
+            self.powder = self.compute_powder(n_images)
         
         if sample == 'AgBehenate':
             ag_behenate = AgBehenate()
