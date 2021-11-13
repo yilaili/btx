@@ -64,7 +64,7 @@ class GeomOpt:
         
         if sample == 'AgBehenate':
             ag_behenate = AgBehenate()
-            distance = ag_behenate.opt_distance(powder,
+            distance = ag_behenate.opt_distance(self.powder,
                                                 self.psi.estimate_distance(),
                                                 self.psi.get_pixel_size(), 
                                                 self.psi.get_wavelength(),
