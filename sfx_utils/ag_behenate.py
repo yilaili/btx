@@ -6,7 +6,7 @@ class AgBehenate:
     
     def __init__(self):
         self.q0 = 0.1076 # |q| of first peak in Angstrom
-        self.delta_qs = np.arange(0.01,0.05,0.00005) # q-spacings to scan over, better in log space?
+        self.delta_qs = np.arange(0.015,0.05,0.00005) # q-spacings to scan over, better in log space?
         
     def ideal_rings(self, qPeaks):
         """
@@ -55,7 +55,7 @@ class AgBehenate:
         print("Detector distance inferred from powder rings: %s mm" % (np.round(distance,2)))
         return distance
     
-    def opt_distance(self, powder, est_distance, pixel_size, wavelength, plot=False):
+    def opt_distance(self, powder, est_distance, pixel_size, wavelength, center=None, plot=False):
         """
         Optimize the sample-detector distance based on the powder image.
         
@@ -69,6 +69,8 @@ class AgBehenate:
             detector pixel size in mm
         wavelength : float
             beam wavelength in Angstrom
+        center : tuple
+            detector center (xc,yc) in pixels
         plot : bool
             if True, plot the results
         
@@ -78,9 +80,12 @@ class AgBehenate:
             optimized sample-detector distance in mm
         """
         from scipy.signal import find_peaks
+
+        if center is None:
+            center = (int(powder.shape[1]/2), int(powder.shape[0]/2))
         
         # determine peaks in radial intensity profile and associated positions in q
-        iprofile = radial_utils.radial_profile(powder)
+        iprofile = radial_utils.radial_profile(powder, center=center)
         peaks_observed, properties = find_peaks(iprofile, prominence=1, distance=10)
         qprofile = radial_utils.pix2q(np.arange(iprofile.shape[0]), wavelength, est_distance, pixel_size)
         
@@ -90,7 +95,7 @@ class AgBehenate:
         opt_distance = self.detector_distance(peaks_predicted[0], wavelength, pixel_size)
         
         if plot:
-            self.visualize_results(powder, center=(int(powder.shape[1]/2), int(powder.shape[0]/2)), 
+            self.visualize_results(powder, center=center, 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
                                    radialprofile=iprofile, qprofile=qprofile)

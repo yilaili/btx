@@ -29,10 +29,12 @@ class GeomOpt:
         """
         if ptype == 'max':
             return np.amax(self.psi.get_images(n_images), axis=0)
-        else:
+        elif ptype == 'mean':
             return np.mean(self.psi.get_images(n_images), axis=0)
-    
-    def opt_distance(self, sample='AgBehenate', n_images=500, plot=False):
+        else:
+            raise ValueError("Invalid powder type, must be max or mean")
+
+    def opt_distance(self, sample='AgBehenate', n_images=500, center=None, plot=False):
         """
         Estimate the sample-detector distance based on the properties of the powder
         diffraction image. Currently only implemented for silver behenate.
@@ -43,6 +45,8 @@ class GeomOpt:
             sample type, e.g. 'AgBehenate'
         n_images : int
             number of diffraction images
+        center : tuple
+            detector center (xc,yc) in pixels. if None, assume assembled image center.
         plot : bool
             if True, visualize results of distance estimation
 
@@ -59,7 +63,10 @@ class GeomOpt:
                                                 self.psi.estimate_distance(),
                                                 self.psi.get_pixel_size(), 
                                                 self.psi.get_wavelength(),
+                                                center=center,
                                                 plot=plot)
+            return distance
+
         else:
             print("Sorry, currently only implemented for silver behenate")
             return -1
