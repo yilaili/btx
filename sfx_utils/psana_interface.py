@@ -46,7 +46,9 @@ class PsanaInterface:
     
     def get_images(self, num_images, assemble=True):
         """
-        Retrieve a fixed number of images from the run.
+        Retrieve a fixed number of images from the run. If the pedestal or gain 
+        information is unavailable and unassembled images are requested, return
+        uncalibrated images.
         
         Paramters
         ---------
@@ -61,6 +63,8 @@ class PsanaInterface:
             images retrieved sequentially from run, optionally assembled
         """
         counter = 0
+        calibrate = True
+
         if assemble:
             images = np.zeros((num_images, 
                                self.det.image_xaxis(self.run).shape[0], 
@@ -70,10 +74,22 @@ class PsanaInterface:
         
         for num,evt in enumerate(self.ds.events()):
             if counter < num_images:
+                # check that pedestal and gain information are available
+                if counter == 0:
+                    if (self.det.pedestals(evt) is None) or (self.det.gain(evt) is None):
+                        calibrate = False
+                        if not calibrate and not assemble:
+                            print("Warning: calibration data unavailable, returning uncalibrated data")
                 if assemble:
-                    images[counter] = self.det.image(evt=evt)
+                    if not calibrate:
+                        raise IOError("Error: calibration data not found for this run.")
+                    else:
+                        images[counter] = self.det.image(evt=evt)
                 else:
-                    images[counter] = self.det.calib(evt=evt)
+                    if calibrate:
+                        images[counter] = self.det.calib(evt=evt)
+                    else:
+                        images[counter] = self.det.raw(evt=evt)
             else:
                 break
             counter += 1
