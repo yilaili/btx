@@ -138,9 +138,9 @@ class StreamInterface:
             ax.hist(vals, bins=100, color='black')
 
             if i<3:
-                ax.set_title(labels[i] + f"={np.median(vals):.3f}" + " (${\mathrm{\AA}}$)")
+                ax.set_title(labels[i] + f"={np.median(vals):.3f}" + " ${\mathrm{\AA}}$")
             else:
-                ax.set_title(labels[i] + f"={np.median(vals):.3f}" + " ($^{\circ}$)")
+                ax.set_title(labels[i] + f"={np.median(vals):.3f}" + "$^{\circ}$")
             if i == 0 or i == 3:
                 ax.set_ylabel("No. crystals")
 
