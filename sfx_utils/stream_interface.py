@@ -64,7 +64,7 @@ class StreamInterface:
     
     def plot_peakogram(self, output=None):
         """
-        Generate a peakogram of the stream data. Code from Frédéric Poitevin.
+        Generate a peakogram of the stream data.
         
         Parameters
         ----------
