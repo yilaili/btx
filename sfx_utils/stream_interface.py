@@ -103,10 +103,9 @@ class StreamInterface:
 
         ax2.set_xlabel('sum in peak')
         ax2.set_ylabel('max in peak')
-        plt.colorbar(im, label='No. reflections')
 
         ax3 = fig.add_subplot(gs[irow, 1])
-        im = ax3.hexbin(peak_sum, peak_sig, gridsize=100, mincnt=1, norm=LogNorm(), cmap='gray')
+        im = ax3.hexbin(peak_sig, peak_max, gridsize=100, mincnt=1, norm=LogNorm(), cmap='gray')
         ax3.set_xlabel('sig(I)')
         ax3.set_yticks([])
         plt.colorbar(im, label='No. reflections')
