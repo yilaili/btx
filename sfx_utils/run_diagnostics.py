@@ -7,7 +7,6 @@ class RunDiagnostics:
     def __init__(self, exp, run, det_type):
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type, track_timestamps=False)
         self.run_stats = dict()
-        self.powder = None
         
     def compute_batch_stats(self, images, max_devs=None):
         """
