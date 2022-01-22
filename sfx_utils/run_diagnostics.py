@@ -112,4 +112,7 @@ class RunDiagnostics:
         else:
             ax1.set_title("Run statistics")
             
+        if output is not None:
+            f.savefig(output, dpi=300)
+
         return
