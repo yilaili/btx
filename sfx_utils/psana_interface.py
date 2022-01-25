@@ -119,5 +119,9 @@ class PsanaInterface:
             else:
                 break
             counter += 1
+
+        if counter < num_images:
+            print("It appears we have reached the end of the run")
+            images = images[:counter]
             
         return images

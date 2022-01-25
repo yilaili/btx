@@ -76,16 +76,16 @@ class RunDiagnostics:
         """
         n_proc = 0
         while n_proc < n_images:
-            try:
-                images = self.psi.get_images(batch_size, assemble=False)
-                for threshold in [None, max_devs]:
-                    batch_stats = self.compute_batch_stats(images, max_devs=threshold)
-                    self.wrangle_run_stats(batch_stats)
-                n_proc += batch_size
-                
-            except:
-                print("Reached the end of the run or requested number of images.")
+
+            images = self.psi.get_images(batch_size, assemble=False)
+            for threshold in [None, max_devs]:
+                batch_stats = self.compute_batch_stats(images, max_devs=threshold)
+                self.wrangle_run_stats(batch_stats)
+
+            n_proc += images.shape[0] # at end of run, might not equal batch size
+            if images.shape[0] < batch_size: # reached end of the run
                 break
+
         return
     
     def plot_run_stats(self, tag='', output=None):

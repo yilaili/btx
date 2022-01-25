@@ -36,27 +36,26 @@ class GeomOpt:
 
         n_proc = 0
         while n_proc < n_images:
-            try:
-                images = self.psi.get_images(batch_size, assemble=True)
-                
-                if ptype == 'max':
-                    if self.powder is None:
-                        self.powder = np.max(images, axis=0)
-                    else:
-                        self.powder = np.max(np.concatenate((self.powder[np.newaxis,:,:],
-                                                             images)), axis=0)
-                elif ptype == 'mean':
-                    if self.powder is None:
-                        self.powder = np.sum(images, axis=0)
-                    else:
-                        self.powder = np.sum(np.concatenate((self.powder[np.newaxis,:,:],
-                                                             images)), axis=0)
-                else:
-                    raise ValueError("Invalid powder type, must be max or mean")             
-                n_proc += batch_size
             
-            except:
-                print("Reached end of run")
+            images = self.psi.get_images(batch_size, assemble=True)
+    
+            if ptype == 'max':
+                if self.powder is None:
+                    self.powder = np.max(images, axis=0)
+                else:
+                    self.powder = np.max(np.concatenate((self.powder[np.newaxis,:,:], images)), axis=0)
+            
+            elif ptype == 'mean':
+                if self.powder is None:
+                    self.powder = np.sum(images, axis=0)
+                else:
+                    self.powder = np.sum(np.concatenate((self.powder[np.newaxis,:,:], images)), axis=0)
+                
+            else:
+                raise ValueError("Invalid powder type, must be max or mean") 
+            
+            n_proc += images.shape[0] # at end of run, might not equal batch size            
+            if images.shape[0] < batch_size: # reached end of the run
                 break
                     
         if ptype == 'mean':
