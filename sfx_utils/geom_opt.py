@@ -10,7 +10,7 @@ class GeomOpt:
                                   det_type=det_type) # detector name, string
         self.powder = None # for storing powder on the fly
         
-    def compute_powder(self, n_images=500, ptype='max'):
+    def compute_powder(self, n_images=500, batch_size=50, ptype='max'):
         """
         Compute the powder from the first n_images of the run, either by taking
         the maximum or average value of each pixel across the image series. The
@@ -19,7 +19,9 @@ class GeomOpt:
         Parameters
         ----------
         n_images : int
-            number of diffraction images
+            total number of diffraction images to process
+        batch_size: int
+            number of images per batch
         ptype : string
             if 'max', take the max pixel value
             if 'average', take the average pixel value
@@ -29,13 +31,36 @@ class GeomOpt:
         powder : numpy.ndarray, 2d
             powder diffraction image, in shape of assembled detector
         """
-        if ptype == 'max':
-            self.powder = np.amax(self.psi.get_images(n_images), axis=0)
-        elif ptype == 'mean':
-            self.powder = np.mean(self.psi.get_images(n_images), axis=0)
-        else:
-            raise ValueError("Invalid powder type, must be max or mean")
+        if batch_size > n_images:
+            batch_size = n_images
 
+        n_proc = 0
+        while n_proc < n_images:
+            
+            images = self.psi.get_images(batch_size, assemble=True)
+    
+            if ptype == 'max':
+                if self.powder is None:
+                    self.powder = np.max(images, axis=0)
+                else:
+                    self.powder = np.max(np.concatenate((self.powder[np.newaxis,:,:], images)), axis=0)
+            
+            elif ptype == 'mean':
+                if self.powder is None:
+                    self.powder = np.sum(images, axis=0)
+                else:
+                    self.powder = np.sum(np.concatenate((self.powder[np.newaxis,:,:], images)), axis=0)
+                
+            else:
+                raise ValueError("Invalid powder type, must be max or mean") 
+            
+            n_proc += images.shape[0] # at end of run, might not equal batch size            
+            if images.shape[0] < batch_size: # reached end of the run
+                break
+                    
+        if ptype == 'mean':
+            self.powder /= float(n_proc)
+        
         return self.powder
 
     def opt_distance(self, sample='AgBehenate', n_images=500, center=None, plot=False):

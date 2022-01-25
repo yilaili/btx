@@ -1,13 +1,16 @@
 import numpy as np
 import psana
 from psana import DataSource
+from psana import EventId
 
 class PsanaInterface:
 
-    def __init__(self, exp, run, det_type):
+    def __init__(self, exp, run, det_type, track_timestamps=False):
         self.exp = exp # experiment name, string
         self.run = run # run number, int
         self.det_type = det_type # detector name, string
+        self.track_timestamps = track_timestamps # bool, keep event info
+        self.seconds, self.nanoseconds, self.fiducials = [], [], []
         self.ds = psana.DataSource(f'exp={exp}:run={run}')
         self.det = psana.Detector(det_type, self.ds.env())
         
@@ -43,6 +46,22 @@ class PsanaInterface:
             estimated detector distance
         """
         return -1*np.mean(self.det.coords_z(self.run))/1e3
+
+    def get_timestamp(self, evtId):
+        """
+        Retrieve the timestamp (seconds, nanoseconds, fiducials) associated with the input 
+        event and store in self variables. For further details, see the example here:
+        https://confluence.slac.stanford.edu/display/PSDM/Jump+Quickly+to+Events+Using+Timestamps
+        
+        Parameters
+        ----------
+        evtId : psana.EventId
+            the event ID associated with a particular image
+        """
+        self.seconds.append(evtId.time()[0])
+        self.nanoseconds.append(evtId.time()[1])
+        self.fiducials.append(evtId.fiducials())
+        return
     
     def get_images(self, num_images, assemble=True):
         """
@@ -80,6 +99,8 @@ class PsanaInterface:
                         calibrate = False
                         if not calibrate and not assemble:
                             print("Warning: calibration data unavailable, returning uncalibrated data")
+
+                # retrieve image, by default calibrated and assembled into detector format
                 if assemble:
                     if not calibrate:
                         raise IOError("Error: calibration data not found for this run.")
@@ -90,8 +111,17 @@ class PsanaInterface:
                         images[counter] = self.det.calib(evt=evt)
                     else:
                         images[counter] = self.det.raw(evt=evt)
+
+                # optionally store timestamps associated with images
+                if self.track_timestamps:
+                    self.get_timestamp(evt.get(EventId))
+
             else:
                 break
             counter += 1
+
+        if counter < num_images:
+            print("It appears we have reached the end of the run")
+            images = images[:counter]
             
         return images
