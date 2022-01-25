@@ -26,18 +26,21 @@ class StreamInterface:
             or [crystal_num,a,b,c,alpha,beta,gamma] if self.cell_only=False
         """
         stream_data = []
-        n_cryst = -1
+        n_cryst, n_chunk = -1, -1
         in_refl = False
 
         f = open(input_file)
         for line in f:
+            if line.find("Begin chunk") != -1:
+                n_chunk += 1
+            
             if line.find("Cell parameters") != -1:
                 cell = line.split()[2:5] + line.split()[6:9]
                 cell = np.array(cell).astype(float)
                 n_cryst+=1
 
                 if self.cell_only:
-                    stream_data.append(np.concatenate((np.array([n_cryst]), cell)))
+                    stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell)))
 
             if not self.cell_only:
                 if line.find("Reflections measured after indexing") != -1:
@@ -51,16 +54,48 @@ class StreamInterface:
                 if in_refl:
                     if line.find("h    k    l") == -1:
                         reflection = np.array(line.split()[:7]).astype(float)
-                        stream_data.append(np.concatenate((np.array([n_cryst]), cell, reflection, np.array([-1]))))
+                        stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell, reflection, np.array([-1]))))
                         continue
 
         f.close()
 
         stream_data = np.array(stream_data)
         if not self.cell_only:
-            stream_data[:,-1] = xtal_utils.compute_resolution(stream_data[:,1:7], stream_data[:,7:10])
+            stream_data[:,-1] = xtal_utils.compute_resolution(stream_data[:,2:8], stream_data[:,8:11])
                 
         return stream_data
+    
+    def get_cell_parameters(self):
+        """ Retrieve unit cell parameters: [a,b,c,alpha,beta,gamma] in A/degrees. """
+        return self.stream_data[:,2:8] * np.array([10.,10.,10.,1,1,1])
+    
+    def get_peak_res(self):
+        """ Retrieve resolution of peaks in 1/Angstrom from self.stream_data. """
+        if self.cell_only:
+            print("Reflections were not extracted")
+        else:
+            return self.stream_data[:,-1]
+    
+    def get_peak_sumI(self):
+        """ Retrieve summed intensity of peaks from self.stream_data. """
+        if self.cell_only:
+            print("Reflections were not extracted")
+        else:
+            return self.stream_data[:,-3]
+
+    def get_peak_maxI(self):
+        """ Retrieve max intensity of peaks from self.stream_data. """
+        if self.cell_only:
+            print("Reflections were not extracted")
+        else:
+            return self.stream_data[:,-5]
+    
+    def get_peak_sigI(self):
+        """ Retrieve max intensity of peaks from self.stream_data. """
+        if self.cell_only:
+            print("Reflections were not extracted")
+        else:
+            return self.stream_data[:,-4]
     
     def plot_peakogram(self, output=None):
         """
@@ -75,10 +110,10 @@ class StreamInterface:
             print("Cannot plot peakogram because only cell parameters were extracted")
             return
               
-        peak_res = self.stream_data[:,-1]
-        peak_sum = self.stream_data[:,-3]
-        peak_max = self.stream_data[:,-5]
-        peak_sig = self.stream_data[:,-4]
+        peak_res = self.get_peak_res()
+        peak_sum = self.get_peak_sumI()
+        peak_max = self.get_peak_maxI()
+        peak_sig = self.get_peak_sigI()
 
         figsize = 8
         peakogram_bins = [500, 500]
@@ -133,7 +168,7 @@ class StreamInterface:
         for i,ax in enumerate([ax1,ax2,ax3,ax4,ax5,ax6]):
             scale=10
             if i>2: scale=1
-            vals = scale*self.stream_data[unq_inds,i+1]
+            vals = scale*self.stream_data[unq_inds,i+2] # first two cols are chunk,crystal
             ax.hist(vals, bins=100, color='black')
 
             if i<3:
@@ -147,5 +182,68 @@ class StreamInterface:
         
         if output is not None:
             f.savefig(output, dpi=300)
+        
+        return
+    
+    def write_stream(self, indices, output):
+        """
+        Write a new stream file from a selection of crystals or reflections of
+        the original stream file.
+        
+        Parameters
+        ----------
+        indices : numpy.ndarray, 1d
+            indices of self.stream_data to retain
+        output : string
+            path to output .stream file     
+        """
+        indices_chunks = np.unique(self.stream_data[:,0][indices])
+
+        f_out = open(output, "a")
+        f_in = open(self.stream_file)
+        
+        n_chunk = -1
+        hkl_counter = -1
+        in_header = True
+        current_chunk = False
+        in_refl = False
+
+        for line in f_in:
+
+            # copy header of stream file before first chunk begins
+            if in_header:
+                if line.find("Indexing methods") != -1:
+                    in_header = False
+                f_out.write(line)
+
+            # in chunk territory...
+            if line.find("Begin chunk") != -1:
+                n_chunk += 1
+                if n_chunk in indices_chunks:
+                    current_chunk = True            
+            if current_chunk:
+                if in_refl:
+                    if (hkl_counter+1 in indices) or (self.cell_only):
+                    #if hkl_counter+1 in indices:
+                        if line.find("End of reflections") == -1:
+                            f_out.write(line)
+                else:
+                    f_out.write(line)
+            if line.find("End chunk") != -1:
+                current_chunk = False
+
+            # count reflections
+            if line.find("h    k    l") != -1:
+                in_refl = True
+                continue
+            if line.find("End of reflections") != -1:
+                if current_chunk:
+                    f_out.write(line)
+                in_refl = False
+            if in_refl:
+                hkl_counter += 1
+
+        f_in.close()
+        f_out.close()
         
         return
