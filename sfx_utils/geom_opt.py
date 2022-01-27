@@ -75,7 +75,8 @@ class GeomOpt:
     def visualize_powder(self, image, vmin=-1e5, vmax=1e5,
                          output=None, figsize=12, dpi=300):
         """
-        Visualize powder image.
+        Visualize the powder image: the distribution of intensities as a histogram
+        and the positive and negative-valued pixels on the assembled detector image.
         """
         fig = plt.figure(figsize=(figsize,figsize),dpi=dpi)
         gs = fig.add_gridspec(2,2)
@@ -110,7 +111,6 @@ class GeomOpt:
 
         if output is not None:
             plt.savefig(output)
-
 
     def opt_distance(self, sample='AgBehenate', n_images=500, center=None, plot=False):
         """
