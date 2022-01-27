@@ -1,4 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.colors as colors
+from matplotlib.colors import LogNorm
 from psana_interface import *
 from ag_behenate import *
 
@@ -10,7 +14,7 @@ class GeomOpt:
                                   det_type=det_type) # detector name, string
         self.powder = None # for storing powder on the fly
         
-    def compute_powder(self, n_images=500, batch_size=50, ptype='max'):
+    def compute_powder(self, n_images=500, batch_size=50, ptype='max', plot=False):
         """
         Compute the powder from the first n_images of the run, either by taking
         the maximum or average value of each pixel across the image series. The
@@ -25,6 +29,8 @@ class GeomOpt:
         ptype : string
             if 'max', take the max pixel value
             if 'average', take the average pixel value
+        plot: bool
+            if True, displays the powder image and histogram.
             
         Returns
         -------
@@ -60,8 +66,51 @@ class GeomOpt:
                     
         if ptype == 'mean':
             self.powder /= float(n_proc)
+
+        if plot:
+            self.visualize_powder(self.powder)
         
         return self.powder
+
+    def visualize_powder(self, image, vmin=-1e5, vmax=1e5,
+                         output=None, figsize=12, dpi=300):
+        """
+        Visualize the powder image: the distribution of intensities as a histogram
+        and the positive and negative-valued pixels on the assembled detector image.
+        """
+        fig = plt.figure(figsize=(figsize,figsize),dpi=dpi)
+        gs = fig.add_gridspec(2,2)
+
+        irow=0
+        ax1 = fig.add_subplot(gs[irow,:2])
+        ax1.grid()
+        ax1.hist(image.flatten(), bins=100, log=True, color='black')
+        ax1.set_title(f'histogram of pixel intensities in powder sum ',
+                     fontdict={'fontsize': 8})
+
+        irow+=1
+        ax2 = fig.add_subplot(gs[irow,0])
+        im = ax2.imshow(np.where(image>0,0,image),
+                        cmap=plt.cm.gist_gray,
+                        norm=colors.SymLogNorm(linthresh=1., linscale=1.,
+                                               vmin=vmin, vmax=0.))
+        ax2.axis('off')
+        ax2.set_title(f'negative intensity pixels',
+                     fontdict={'fontsize': 6})
+        plt.colorbar(im)
+
+        ax3 = fig.add_subplot(gs[irow,1])
+        im = ax3.imshow(np.where(image<0,0,image),
+                        cmap=plt.cm.gist_yarg,
+                        norm=colors.SymLogNorm(linthresh=1., linscale=1.,
+                                               vmin=0, vmax=vmax))
+        ax3.axis('off')
+        ax3.set_title(f'positive intensity pixels',
+                     fontdict={'fontsize': 6})
+        plt.colorbar(im)
+
+        if output is not None:
+            plt.savefig(output)
 
     def opt_distance(self, sample='AgBehenate', n_images=500, center=None, plot=False):
         """
