@@ -4,8 +4,8 @@ Miscellaneous functions for aiding calibration during SFX experiments at LCLS.
 ## Contributing
 This repository is the centralized location to discuss and share calibration files, documentation, scripts and code for SFX analysis.
 
-See "Discussions" above for a forum experience.
-Contribute or check "Wiki" above for tutorials and tips, shared experience, etc.
+See [Discussions](https://github.com/apeck12/sfx_utils/discussions) above for a forum experience.
+Contribute or check [Wiki](https://github.com/apeck12/sfx_utils/wiki) above for tutorials and tips, shared experience, etc.
 
 For contributing code and script, please don't push to the main branch directly. Rather, work in a specific branch for the task at hand, and make a pull request (PR) so it can be safely merged into the main branch after the person you assign as a reviewer does the code review (if necessary).
 
