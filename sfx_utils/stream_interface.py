@@ -30,9 +30,12 @@ class StreamInterface:
         in_refl = False
 
         f = open(input_file)
-        for line in f:
+        for lc,line in enumerate(f):
             if line.find("Begin chunk") != -1:
                 n_chunk += 1
+                if in_refl:
+                    in_refl = False
+                    print(f"Warning! Line {lc} associated with chunk {n_chunk} is problematic: {line}")
             
             if line.find("Cell parameters") != -1:
                 cell = line.split()[2:5] + line.split()[6:9]
@@ -53,8 +56,11 @@ class StreamInterface:
 
                 if in_refl:
                     if line.find("h    k    l") == -1:
-                        reflection = np.array(line.split()[:7]).astype(float)
-                        stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell, reflection, np.array([-1]))))
+                        try:
+                            reflection = np.array(line.split()[:7]).astype(float)
+                            stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell, reflection, np.array([-1]))))
+                        except ValueError:
+                            print(f"Couldn't parse line {lc}: {line}")
                         continue
 
         f.close()
