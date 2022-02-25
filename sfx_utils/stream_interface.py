@@ -67,7 +67,10 @@ class StreamInterface:
 
         stream_data = np.array(stream_data)
         if not self.cell_only:
-            stream_data[:,-1] = xtal_utils.compute_resolution(stream_data[:,2:8], stream_data[:,8:11])
+            if len(stream_data) == 0:
+                print("Warning: no indexed reflections found!")
+            else:
+                stream_data[:,-1] = xtal_utils.compute_resolution(stream_data[:,2:8], stream_data[:,8:11])
                 
         return stream_data
     
