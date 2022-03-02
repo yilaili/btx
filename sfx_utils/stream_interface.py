@@ -67,7 +67,10 @@ class StreamInterface:
 
         stream_data = np.array(stream_data)
         if not self.cell_only:
-            stream_data[:,-1] = xtal_utils.compute_resolution(stream_data[:,2:8], stream_data[:,8:11])
+            if len(stream_data) == 0:
+                print("Warning: no indexed reflections found!")
+            else:
+                stream_data[:,-1] = xtal_utils.compute_resolution(stream_data[:,2:8], stream_data[:,8:11])
                 
         return stream_data
     
@@ -87,23 +90,23 @@ class StreamInterface:
         if self.cell_only:
             print("Reflections were not extracted")
         else:
-            return self.stream_data[:,-3]
+            return self.stream_data[:,-5]
 
     def get_peak_maxI(self):
         """ Retrieve max intensity of peaks from self.stream_data. """
         if self.cell_only:
             print("Reflections were not extracted")
         else:
-            return self.stream_data[:,-5]
+            return self.stream_data[:,-3]
     
     def get_peak_sigI(self):
-        """ Retrieve max intensity of peaks from self.stream_data. """
+        """ Retrieve peaks' standard deviations from self.stream_data. """
         if self.cell_only:
             print("Reflections were not extracted")
         else:
             return self.stream_data[:,-4]
     
-    def plot_peakogram(self, output=None):
+    def plot_peakogram(self, output=None, plot_Iogram=False):
         """
         Generate a peakogram of the stream data.
         
@@ -111,15 +114,24 @@ class StreamInterface:
         ----------
         output : string, default=None
             if supplied, path for saving png of peakogram
+        plot_Iogram : boolean, default=False
+            if True, plot integrated rather than max intensities in the peakogram
         """
         if self.cell_only:
             print("Cannot plot peakogram because only cell parameters were extracted")
             return
               
         peak_res = self.get_peak_res()
-        peak_sum = self.get_peak_sumI()
-        peak_max = self.get_peak_maxI()
         peak_sig = self.get_peak_sigI()
+        if not plot_Iogram:
+            peak_sum = self.get_peak_sumI()
+            peak_max = self.get_peak_maxI()
+            xlabel, ylabel = "sum", "max"
+        # if Iogram, swap peak_sum and peak_max
+        else:
+            peak_sum = self.get_peak_maxI()
+            peak_max = self.get_peak_sumI()
+            xlabel, ylabel = "max", "sum"
 
         figsize = 8
         peakogram_bins = [500, 500]
@@ -136,14 +148,14 @@ class StreamInterface:
         im = ax1.pcolormesh(yedges, xedges, H, cmap='gray', norm=LogNorm())
         plt.colorbar(im)
         ax1.set_xlabel("1/d (${\mathrm{\AA}}$$^{-1}$)")
-        ax1.set_ylabel("log(peak intensity)")
+        ax1.set_ylabel(f"log(peak intensity) - {ylabel}")
 
         irow += 1
         ax2 = fig.add_subplot(gs[irow, 0])
         im = ax2.hexbin(peak_sum, peak_max, gridsize=100, mincnt=1, norm=LogNorm(), cmap='gray')
 
-        ax2.set_xlabel('sum in peak')
-        ax2.set_ylabel('max in peak')
+        ax2.set_xlabel(f'{xlabel} in peak')
+        ax2.set_ylabel(f'{ylabel} in peak')
 
         ax3 = fig.add_subplot(gs[irow, 1])
         im = ax3.hexbin(peak_sig, peak_max, gridsize=100, mincnt=1, norm=LogNorm(), cmap='gray')
