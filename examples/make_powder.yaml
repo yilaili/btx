@@ -5,6 +5,6 @@ exp: 'cxip20719'
 run: '10'
 det_type: 'jungfrau4M'
 
-task: 'make_powder_sum'
+task: 'make_powder'
 n_images: 1000
 batch_size: 100
