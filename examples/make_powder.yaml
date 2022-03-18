@@ -1,7 +1,8 @@
 #
-root_dir: '/cds/data/psdm/cxi/cxip20719/scratch/fpoitevi/powders/'
+#root_dir: '/cds/data/psdm/cxi/cxip20719/scratch/fpoitevi/powders/'
 
-exp: 'cxip20719'
+
+exp: 'cxix53120'
 run: '10'
 det_type: 'jungfrau4M'
 

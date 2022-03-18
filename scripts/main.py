@@ -5,7 +5,7 @@ import shutil
 import yaml
 
 from sfx_utils.misc.shortcuts import AttrDict, conditional_mkdir
-from .tasks import make_powder
+from .tasks import test, make_powder
 
 def main():
     parser = argparse.ArgumentParser()
@@ -20,7 +20,9 @@ def main():
 
     shutil.copy2(config_filepath, config.root_dir)
 
-    if(config.task == 'make_powder'):
+    if(config.task == 'test'):
+        test(config)
+    elif(config.task == 'make_powder'):
         make_powder(config)
 
     return 0, 'Task successfully executed'

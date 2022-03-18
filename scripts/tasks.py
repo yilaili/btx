@@ -7,6 +7,9 @@ from sfx_utils.diagnostics.geom_opt import GeomOpt
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def test(config):
+    print(config)
+
 def make_powder(config):
     geom_opt = GeomOpt(exp=config.exp,
                        run=config.run,
