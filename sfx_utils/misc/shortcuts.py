@@ -20,3 +20,11 @@ class AttrDict(dict):
         """Return a class with attributes equal to the input dictionary."""
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+        self.check_required_arguments()
+
+    def check_required_arguments(self):
+        """Check that the config object has required attributes."""
+        if not hasattr(self, 'root_dir'):
+            print(f"Error: required argument 'root_dir' is not configured.")
+            return -1
+
