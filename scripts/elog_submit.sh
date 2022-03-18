@@ -48,6 +48,7 @@ set -- "${POSITIONAL[@]}"
 
 QUEUE=${QUEUE:='psanaq'}
 CORES=32
+MAIN_PY='/cds/sw/package/autosfx/sfx_utils/main.py'
 
 #Submit to SLURM
 sbatch << EOF

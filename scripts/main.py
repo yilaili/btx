@@ -5,7 +5,7 @@ import shutil
 import yaml
 
 from sfx_utils.misc.shortcuts import AttrDict, conditional_mkdir
-from .plot_powder_sum import task as plot_powder_sum
+from .make_powder_sum import task as make_powder_sum
 
 def main():
     parser = argparse.ArgumentParser()
@@ -20,8 +20,8 @@ def main():
 
     shutil.copy2(config_filepath, config.root_dir)
 
-    if(config.task == 'plot_powder_sum'):
-        plot_powder_sum(config)
+    if(config.task == 'make_powder_sum'):
+        make_powder_sum(config)
 
     return 0, 'Task successfully executed'
 
