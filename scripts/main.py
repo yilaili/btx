@@ -2,6 +2,7 @@
 
 import argparse
 import shutil
+import traceback
 import yaml
 
 from sfx_utils.misc.shortcuts import AttrDict, conditional_mkdir
