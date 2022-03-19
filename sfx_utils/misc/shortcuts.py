@@ -24,9 +24,7 @@ class AttrDict(dict):
 
     def check_required_arguments(self):
         """Check that the config object has required attributes."""
-        try:
-            hasattr(self, 'root_dir')
-        except ValueError:
+        if not hasattr(self, 'root_dir'):
             print(f"Error: required argument 'root_dir' is not configured.")
-            return -1
+            raise AttributeError
 
