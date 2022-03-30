@@ -57,45 +57,32 @@ class MaskInterface:
         f.close()
         return
     
-    def _convert_to_cctbx(self, mask):
+    def _convert_to_cctbx(self):
         """
         Remake mask in CCTBX format, by reshaping and converting to flex.bool.
         Currently only the Jungfrau and Epix10k detectors are supported.
         
-        Parameters
-        ----------
-        mask : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss)
-            binary mask, where 0 indicates a bad pixel
-        
         Returns
         -------
-        reshaped_mask : list of flex bool objects
+        mask : list of flex bool objects
             binary mask in CCTBX format
         """
         from scitbx.array_family import flex
         
-        recognized_det = True
-        if 'epix10k' in det_type:
-            n_asics_per_module = 4 # 2x2 asics per module
-        elif 'jungfrau' in det_type:
-            n_asics_per_module = 8 # 2x4 asics per module
-        else:
-            recognized_det = False
+        if 'epix10k' in self.det_type:
+            mask = unstack_asics(self.mask, self.det_type, dtype='double')
+        
+        elif 'jungfrau' in self.det_type:
+            from xfel.util import jungfrau
+            
+            mask = []
+            for n_panel in range(self.mask.shape[0]):
+                mask.append(flex.bool(jungfrau.correct_panel(self.mask[n_panel].astype('float64'))))
 
-        if not recognized_det:
+        else:
             sys.exit("Sorry, detector type currently not supported for saving to CCTBX format")
-        else:
-            reshaped_mask = []
-            sdim, fdim = int(mock.shape[1]/2), int(mock.shape[2]/2)
-            for n_panel in range(mock.shape[0]):
-                for n_asic in range(n_asics_per_module):
-                    sensor_id = n_asic // 2
-                    asic_in_sensor_id = n_asic % 2
-                    asic_data = mock[n_panel][sensor_id * sdim : (sensor_id + 1) * sdim,
-                                              asic_in_sensor_id * fdim : (asic_in_sensor_id + 1) * fdim,]
-                    reshaped_mask.append(flex.double(np.array(asic_data)))
-
-            return reshaped_mask
+            
+        return mask
                 
     def save_mask(self, output, mask_format='psana'):
         """
@@ -119,75 +106,94 @@ class MaskInterface:
         if mask_format == 'crystfel':
             mask = self.mask.reshape(-1, self.mask.shape[-1])
             self._save_as_hdf5(output, mask)
+            print(f"Saved mask to {output} in CrystFEL format, with shape {mask.shape}")
 
         if mask_format == 'cctbx':
             try:
-                import easy_pickle
+                from libtbx import easy_pickle
             except ImportError:
                 sys.exit("Could not load libtbx library")
             
             # supposed to be a list of flex bool objects
-            mask = self._convert_to_cctbx(self.mask)
+            mask = self._convert_to_cctbx()
             easy_pickle.dump(output, mask)
+            print(f"Saved mask to {output} in CCTBX format")
 
         return
 
 #### Miscellaneous functions ####
-            
-def load_cctbx_mask(input_file, det_type):
-    """
-    Load a DIALS-generated mask for a detector composed of 2x2 asics panels.
-    The data are reshaped from:
-    (n_asics, fs_asics_shape, ss_asics_shape) to:
-    (n_panels, fs_panel_shape, ss_panel_shape),
-    where each panel is composed
-    of 2x2 asics. 
     
-    This unstacking reverses the stacking performed here:
-    https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57
+def unstack_asics(image, det_type, dtype='double'):
+    """
+    Unstack the asics and convert to CCTBX data type - specifically, a list of 
+    flex.double or flex.bool objects. For the epix10k2M, for example, the shape
+    is updated from (16,352,384) -> (64,176,192). This mimics the code here:
+    https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57.
     
     Parameters
     ----------
-    input_file : str
-        path to dials/cctbx mask in pickle format
+    image : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss)
+        image in unassembled psana format
     det_type : str
-        either 'epix10k2m' or 'jungfrau4M'
+        epix10k2M or jungfrau4M
+    dtype : str
+        return data type, double or (for masks) bool
     
     Returns
     -------
-    mask : numpy.ndarray, shape (n_panels, fs_panel_shape, ss_panel_shape)
-        binary mask, reshaped from DIALS output
+    reshaped_image : list of flex.bool or flex.double arrays
+        list of unstacked asics data
+    """
+    try:
+        from scitbx.array_family import flex
+    except ImportError:
+        sys.exit("Could not load libtbx flex library")
+    
+    n_asics_per_module = 0
+    if 'epix10k' in det_type:
+        n_asics_per_module = 4 # 2x2 asics per module
+    if 'jungfrau' in det_type:
+        n_asics_per_module = 8 # 2x4 asics per module
+    if n_asics_per_module == 0:
+        sys.exit("Sorry, detector type currently not supported for CCTBX-style asics-stacking.")
+    
+    reshaped_image = []
+    sdim, fdim = int(image.shape[1]/2), int(image.shape[2]/2)
+    for n_panel in range(image.shape[0]):
+        for n_asic in range(n_asics_per_module):
+            sensor_id = n_asic // int(n_asics_per_module/2)
+            asic_in_sensor_id = n_asic % int(n_asics_per_module/2)
+            asic_data = image[n_panel][sensor_id * sdim : (sensor_id + 1) * sdim,
+                                      asic_in_sensor_id * fdim : (asic_in_sensor_id + 1) * fdim,]
+            if dtype == 'double':
+                reshaped_image.append(flex.double(np.array(asic_data)))
+            elif dtype == 'bool':
+                reshaped_image.append(flex.bool(np.array(asic_data)))
+            else:
+                sys.exit("Print unrecognized data type; must be bool or double")
+            
+    return reshaped_image
+
+def load_cctbx_mask(input_file):
+    """
+    Load a CCTBX mask, converting from a list of flex.bools to 
+    a numpy array.
+
+    Parameters
+    ----------
+    input_file = str
+        path to CCTBX mask in pickle format
+    
+    Returns
+    -------
+    mask : numpy.ndarray, CCTBX-compatible shape
+        binary mask
     """
     try:
         from libtbx import easy_pickle
     except ImportError:
-        sys.exit("Could not load libtbx library")
-    
-    recognized_det = True
-    if 'epix10k' in det_type:
-        n_asics_per_module = 4 # 2x2 asics per module
-    elif 'jungfrau' in det_type:
-        n_asics_per_module = 8 # 2x4 asics per module
-    else:
-        recognized_det = False
+        sys.exit("Could not load libtbx flex library")
 
-    if not recognized_det:
-        sys.exit("Sorry, detector type currently not supported for saving to CCTBX format")
-    
-    mask_reshape = easy_pickle.load(input_file)
-    mask_reshape = np.array([m.as_numpy_array() for m in mask_reshape]).astype(int)
-
-    # asic unstack into mmodules; there are 2x2 or 4x2 asics per module
-    sdim, fdim = mask_reshape.shape[1:]
-    mask = np.zeros((int(mask_reshape.shape[0]/n_asics_per_module), sdim*2, fdim*2))
-
-    counter = 0
-    for module_count in range(mask.shape[0]):
-        for asic_count in range(4):
-            sensor_id = asic_count // 2 
-            asic_in_sensor_id = asic_count % 2 
-            mask[module_count][sensor_id * sdim : (sensor_id + 1) * sdim,
-                               asic_in_sensor_id * fdim : (asic_in_sensor_id + 1) * fdim,] =  mask_reshape[counter]
-            counter+=1
-            
+    mask = easy_pickle.load(input_file)
+    mask = np.array([m.as_numpy_array() for m in mask])
     return mask
