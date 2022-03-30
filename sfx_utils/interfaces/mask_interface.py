@@ -174,6 +174,49 @@ def unstack_asics(image, det_type, dtype='double'):
             
     return reshaped_image
 
+def stack_asics(image, det_type):
+    """
+    Stack the asics to reshape from CCTBX to psana (unassembled) conventions.
+    For the epix10k2M, for example, the shape is updated from (64,176,192) -> 
+    (16,352,384). This reverses the code here:
+    https://github.com/cctbx/dxtbx/blob/main/src/dxtbx/format/FormatXTCEpix.py#L46-L57.
+    
+    Parameters
+    ----------
+    image : numpy.ndarray, shape (n_asics, n_asics_pixels_fs, n_asics_pixels_ss)
+        image in unstacked asics format
+    det_type : str
+        epix10k2M or jungfrau4M
+    
+    Returns
+    -------
+    reshaped_image : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss)
+        image in unassembled psana format
+    """    
+    n_asics_per_module = 0
+    if 'epix10k' in det_type:
+        n_asics_per_module = 4 # 2x2 asics per module
+    if 'jungfrau' in det_type:
+        n_asics_per_module = 8 # 2x4 asics per module
+        print("Warning: currently unstacking doesn't account for CCTBX's big pixel adjustment.")
+    if n_asics_per_module == 0:
+        sys.exit("Sorry, detector type currently not supported for CCTBX-style asics-stacking.")
+        
+    # asic unstack into mmodules; there are 2x2 asics per module
+    sdim, fdim = image.shape[1:]
+    reshaped_image = np.zeros((int(image.shape[0]/4), sdim*2, fdim*2))
+
+    counter = 0
+    for module_count in range(reshaped_image.shape[0]):
+        for asic_count in range(n_asics_per_module):
+            sensor_id = asic_count // int(n_asics_per_module/2) 
+            asic_in_sensor_id = asic_count % int(n_asics_per_module/2) 
+            reshaped_image[module_count][sensor_id * sdim : (sensor_id + 1) * sdim,
+                               asic_in_sensor_id * fdim : (asic_in_sensor_id + 1) * fdim,] = image[counter]
+            counter+=1
+
+    return reshaped_image
+
 def load_cctbx_mask(input_file):
     """
     Load a CCTBX mask, converting from a list of flex.bools to 
@@ -181,7 +224,7 @@ def load_cctbx_mask(input_file):
 
     Parameters
     ----------
-    input_file = str
+    input_file : str
         path to CCTBX mask in pickle format
     
     Returns
@@ -196,4 +239,39 @@ def load_cctbx_mask(input_file):
 
     mask = easy_pickle.load(input_file)
     mask = np.array([m.as_numpy_array() for m in mask])
+    return mask
+
+def load_crystfel_mask(input_file, dataset='/entry_1/data_1/mask', reshape=True):
+    """
+    Load a CrystFEL compatible mask from the input h5 file and optionally 
+    reshape to the unassembled detector shape. Currently only Jungfrau4M
+    and epix10k2M detectors are supported for reshape=True.
+    
+    Parameters
+    ----------
+    input_file : str
+        path to h5 file containing mask
+    dataset : str
+        internal path to dataset, default is psocake compatible
+    reshape : bool
+        if True, reshape to unassembled psana detector shape
+        
+    Returns
+    -------
+    mask : numpy.ndarray, shape depends on reshape flag
+        binary mask. if not reshape, shape is (n_panels * n_pixels_fs, n_pixels_ss)
+        if reshape, shape is (n_panels, n_pixels_fs, n_pixels_ss)
+    """
+    f = h5py.File(input_file, "r")
+    mask = f[dataset][:]
+    f.close()
+    
+    if reshape:
+        if np.prod(mask.shape) == 2162688: # epix10k2M
+            mask = mask.reshape(16, 352, 384)
+        elif np.prod(mask.shape) == 4194304:
+            mask = mask.reshape(8, 512, 1024)
+        else: 
+            print("Mask did not match epix10k2M or Jungfrau4M dimensions; could not reshape")
+        
     return mask
