@@ -35,7 +35,7 @@ if __name__ == '__main__':
     except Exception as e:
         print(traceback.format_exc(), file=sys.stderr)
         retval = 1
-        status_message = 'Error: Training failed.'
+        status_message = 'Error: Task failed.'
 
     print(status_message)
     exit(retval)
