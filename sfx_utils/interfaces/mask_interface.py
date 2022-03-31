@@ -8,6 +8,10 @@ class MaskInterface:
         self.exp = exp # experiment name, str
         self.run = run # run number, int
         self.det_type = det_type # detector name, str
+        self.mask = None
+        
+        self.psi = PsanaInterface(exp=self.exp, run=self.run, det_type=self.det_type) 
+        self.pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.run))
         
     def generate_from_psana_run(self, thresholds, n_images=1):
         """
@@ -27,17 +31,59 @@ class MaskInterface:
             binary mask, where 0 indicates a bad pixel
         """
         # retrieve images from run
-        psi = PsanaInterface(exp=self.exp, run=self.run, det_type=self.det_type) 
-        self.geom = psi.det.geometry(self.run)
-        images = psi.get_images(n_images, assemble=False)
+        images = self.psi.get_images(n_images, assemble=False)
         
         # apply thresholds and set valid pixels to 1
         images[(images < thresholds[0]) | (images > thresholds[1])] = 0
         mask = np.prod(images, axis=0)
         mask[mask!=0] = 1
+        mask = mask.astype(int)
         
-        self.mask = mask.astype(int)
-        return
+        if self.mask is None:
+            self.mask = mask
+        else:
+            self.mask *= mask
+    
+    def load_mask(self, input_file, mask_format='crystfel', dataset='/entry_1/data_1/mask'):
+        """
+        Load input mask and reshape from given format to psana unassembled.
+        If self.masks is None, store to class variable. Otherwise create a 
+        combined mask by multipying this and current self.mask.
+        
+        Parameters
+        ----------
+        input_file : str
+            path to input mask
+        mask_format : str, default='crystfel'
+            input style - psana, psana_assembled, crystfel, or cctbx
+        dataset : str
+            internal path to dataset, only relevant for mask_format='crystfel'
+        """
+        if mask_format == 'psana':
+            mask = np.load(input_file)
+            
+        elif mask_format == 'psana_assembled':
+            mask = diassemble_image_stack_batch(np.load(input_file), self.pixel_index_map)
+        
+        elif mask_format == 'crystfel':
+            mask = load_crystfel_mask(input_file, dataset=dataset, reshape=True)
+            
+        elif mask_format == 'cctbx':
+            mask = load_cctbx_mask(input_file)
+            if 'epix10k' in self.det_type:
+                mask = stack_asics(mask, det_type=self.det_type)
+            else:
+                sys.exit("Sorry, detector type currently not supported for reshaping from CCTBX format")
+        
+        else:
+            sys.exit("Mask format not recognized.")
+            
+        if self.mask is None:
+            self.mask = mask.astype(int)
+        else:
+            print("Combining input mask with current self.mask")
+            assert self.mask.shape == mask.shape
+            self.mask *= mask.astype(int)
     
     def _save_as_hdf5(self, output, mask):
         """
@@ -55,7 +101,6 @@ class MaskInterface:
         f = h5py.File(output, "w")
         dset = f.create_dataset('/entry_1/data_1/mask', data=mask, dtype='int')
         f.close()
-        return
     
     def _convert_to_cctbx(self):
         """
@@ -100,15 +145,14 @@ class MaskInterface:
             np.save(output, self.mask)
             
         elif mask_format == 'psana_assembled':
-            pixel_index_map = retrieve_pixel_index_map(self.geom)
-            np.save(output, assemble_image_stack_batch(self.mask, pixel_index_map))
+            np.save(output, assemble_image_stack_batch(self.mask, self.pixel_index_map))
         
-        if mask_format == 'crystfel':
+        elif mask_format == 'crystfel':
             mask = self.mask.reshape(-1, self.mask.shape[-1])
             self._save_as_hdf5(output, mask)
             print(f"Saved mask to {output} in CrystFEL format, with shape {mask.shape}")
 
-        if mask_format == 'cctbx':
+        elif mask_format == 'cctbx':
             try:
                 from libtbx import easy_pickle
             except ImportError:
@@ -118,8 +162,24 @@ class MaskInterface:
             mask = self._convert_to_cctbx()
             easy_pickle.dump(output, mask)
             print(f"Saved mask to {output} in CCTBX format")
-
-        return
+        
+        else:
+            sys.exit("Mask format not recognized.")
+            
+    def visualize_mask(self, output=None):
+        """
+        Visualize self.mask after assembling into 2d detector format.
+        
+        Parameters
+        ----------
+        output : str, default: None
+            if provided, save mask to this path
+        """
+        f, ax1 = plt.subplots(figsize=(4,4))
+        ax1.imshow(assemble_image_stack_batch(self.mask, self.pixel_index_map))
+        
+        if output:
+            f.savefig(output, bbox_inches='tight', dpi=300)
 
 #### Miscellaneous functions ####
     
@@ -269,7 +329,7 @@ def load_crystfel_mask(input_file, dataset='/entry_1/data_1/mask', reshape=True)
     if reshape:
         if np.prod(mask.shape) == 2162688: # epix10k2M
             mask = mask.reshape(16, 352, 384)
-        elif np.prod(mask.shape) == 4194304:
+        elif np.prod(mask.shape) == 4194304: # jungfrau4M
             mask = mask.reshape(8, 512, 1024)
         else: 
             print("Mask did not match epix10k2M or Jungfrau4M dimensions; could not reshape")
