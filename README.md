@@ -1,11 +1,11 @@
-# sfx
-Miscellaneous functions for aiding calibration during SFX experiments at LCLS.
+# btx
+Miscellaneous functions for aiding analysis during LCLS experiments.
 
 ## Contributing
 This repository is the centralized location to discuss and share calibration files, documentation, scripts and code for SFX analysis.
 
-See [Discussions](https://github.com/lcls-users/sfx/discussions) above for a forum experience.
-Contribute or check [Wiki](https://github.com/lcls-users/sfx/wiki) above for tutorials and tips, shared experience, etc.
+See [Discussions](https://github.com/lcls-users/btx/discussions) above for a forum experience.
+Contribute or check [Wiki](https://github.com/lcls-users/btx/wiki) above for tutorials and tips, shared experience, etc.
 
 For contributing code and script, please don't push to the main branch directly. Rather, work in a specific branch for the task at hand, and make a pull request (PR) so it can be safely merged into the main branch after the person you assign as a reviewer does the code review (if necessary).
 
@@ -17,7 +17,7 @@ Before you start working on contribution, please make sure your local main branc
 
 To create your local repository (from this GitHub hosted remote repository):
 ```
-$ git clone git@github.com:lcls-users/sfx.git
+$ git clone git@github.com:lcls-users/btx.git
 ```
 To update your local main branch:
 ```
