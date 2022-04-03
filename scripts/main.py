@@ -22,7 +22,6 @@ def main():
 
     shutil.copy2(config_filepath, config.root_dir)
     
-    #eval("config.task(config)")
     if(config.task == 'test'):
         test(config)
     elif(config.task == 'make_powder'):
