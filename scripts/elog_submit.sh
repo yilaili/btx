@@ -15,6 +15,8 @@ $(basename "$0"):
       Input config file
     -q|--queue
       Queue to use on SLURM
+    -n|--ncores
+      Number of cores
 EOF
 }
 
@@ -38,6 +40,11 @@ do
       shift
       shift
       ;;
+    -n|--ncores)
+      CORES="$2"
+      shift
+      shift
+      ;;
     *)
       POSITIONAL+=("$1")
       shift
@@ -47,8 +54,9 @@ done
 set -- "${POSITIONAL[@]}"
 
 QUEUE=${QUEUE:='psanaq'}
-CORES=32
-MAIN_PY='/cds/sw/package/autosfx/sfx_utils/main.py'
+CORES=${CORES:=1}
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+MAIN_PY="${SCRIPT_DIR}/main.py"
 
 #Submit to SLURM
 sbatch << EOF
@@ -63,7 +71,7 @@ sbatch << EOF
 source /reg/g/psdm/etc/psconda.sh -py3
 
 echo "$MAIN_PY $CONFIGFILE"
-$MAIN_PY $CONFIGFILE
+$MAIN_PY -c $CONFIGFILE
 EOF
 
 echo "Job sent to queue"

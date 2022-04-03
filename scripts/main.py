@@ -7,7 +7,7 @@ import traceback
 import yaml
 
 from sfx_utils.misc.shortcuts import AttrDict, conditional_mkdir
-from .tasks import test, make_powder
+from tasks import test, make_powder
 
 def main():
     parser = argparse.ArgumentParser()
@@ -21,7 +21,8 @@ def main():
         return -1
 
     shutil.copy2(config_filepath, config.root_dir)
-
+    
+    #eval("config.task(config)")
     if(config.task == 'test'):
         test(config)
     elif(config.task == 'make_powder'):
