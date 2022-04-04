@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
 from matplotlib.colors import LogNorm
-from sfx_utils.diagnostics.run import RunDiagnostics
-from sfx_utils.interfaces.psana_interface import assemble_image_stack_batch
+from btx.diagnostics.run import RunDiagnostics
+from btx.interfaces.psana_interface import assemble_image_stack_batch
 from .ag_behenate import *
 
 class GeomOpt:

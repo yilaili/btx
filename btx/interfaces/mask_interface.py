@@ -1,6 +1,6 @@
 import numpy as np
 import h5py, sys
-from sfx_utils.interfaces.psana_interface import *
+from btx.interfaces.psana_interface import *
 
 class MaskInterface:
     

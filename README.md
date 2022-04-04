@@ -32,5 +32,5 @@ $ git add <the files that you have been working on>
 $ git commit -m "Hey everyone, I have been working on those files to do this and that"
 $ git push origin my-new-branch
 ```
-At this point, checkout the repo on GitHub and create a Pull Request (like [this one](https://github.com/apeck12/sfx_utils/pull/11)). 
+At this point, checkout the repo on GitHub and create a Pull Request (like [this one](https://github.com/apeck12/btx/pull/11)). 
 Once merged, the main branch will be updated with your work!

@@ -6,7 +6,7 @@ import sys
 import traceback
 import yaml
 
-from sfx_utils.misc.shortcuts import AttrDict, conditional_mkdir
+from btx.misc.shortcuts import AttrDict, conditional_mkdir
 from tasks import test, make_powder
 
 def main():
