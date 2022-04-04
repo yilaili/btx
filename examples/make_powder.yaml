@@ -1,0 +1,11 @@
+#
+#root_dir: '/cds/data/psdm/cxi/cxip20719/scratch/fpoitevi/powders/'
+
+
+exp: 'cxix53120'
+run: '10'
+det_type: 'jungfrau4M'
+
+task: 'make_powder'
+n_images: 1000
+batch_size: 100
