@@ -69,6 +69,7 @@ sbatch << EOF
 #SBATCH --ntasks=$CORES
 
 source /reg/g/psdm/etc/psconda.sh -py3
+export PYTHONPATH="${PYTHONPATH}:/cds/sw/package/autosfx/btx"
 
 echo "$MAIN_PY $CONFIGFILE"
 $MAIN_PY -c $CONFIGFILE
