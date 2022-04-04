@@ -2,8 +2,8 @@ import logging
 import numpy as np
 import os
 
-from sfx_utils.diagnostics.run import RunDiagnostics
-from sfx_utils.misc.shortcuts import conditional_mkdir
+from btx.diagnostics.run import RunDiagnostics
+from btx.misc.shortcuts import conditional_mkdir
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

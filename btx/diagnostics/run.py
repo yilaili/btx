@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
 from matplotlib.colors import LogNorm
-from sfx_utils.interfaces.psana_interface import *
+from btx.interfaces.psana_interface import *
 
 class RunDiagnostics:
     

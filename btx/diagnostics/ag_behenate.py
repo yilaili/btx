@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sfx_utils.misc.radial import radial_profile, q2pix, pix2q
+from btx.misc.radial import radial_profile, q2pix, pix2q
 
 class AgBehenate:
     
