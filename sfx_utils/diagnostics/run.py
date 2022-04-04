@@ -14,6 +14,7 @@ class RunDiagnostics:
         self.n_proc = 0 # number of images processed
         self.powders = dict() 
         self.run_stats = dict()
+        self.run = run # track for output plots nomenclature
         
     def compute_powders(self, images):
         """
@@ -54,10 +55,10 @@ class RunDiagnostics:
         """
         for key in ['max','avg','std']:
             if assemble:
-                np.save(os.path.join(output, f"powder_{key}.npy"), 
+                np.save(os.path.join(output, f"powder_{key}_r{self.run}.npy"), 
                         assemble_image_stack_batch(self.powders[key], self.pixel_index_map))
             else:
-                np.save(os.path.join(output, f"powder_{key}.npy"), self.powders[key])
+                np.save(os.path.join(output, f"powder_{key}_r{self.run}.npy"), self.powders[key])
         
         return
         
