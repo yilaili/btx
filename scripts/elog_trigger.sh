@@ -65,14 +65,13 @@ CORES=${CORES:=1}
 
 ### below is inherited from previous Airflow, needs to be fixed ###
 
-NETRC=/reg/neh/home5/fpoitevi/netrc
-AIRFLOW_URL=pswww.slac.stanford.edu/airflow-dev/home
+AIRFLOW_URL=http://172.21.32.139:8080/airflow-dev
 
 # test to make sure its up
-curl --netrc-file ${NETRC}  https://${AIRFLOW_URL}/api/experimental/test
+curl --user "btx:btx" ${AIRFLOW_URL}/api/v1/dags/${DAG}
 
 # temporary re-routing:
-JID_UPDATE_COUNTERS=${JID_UPDATE_COUNTERS///psdm02.pcdsn/pslogin01.slac.stanford.edu}
+#JID_UPDATE_COUNTERS=${JID_UPDATE_COUNTERS///psdm02.pcdsn/pslogin01.slac.stanford.edu}
 
 # create new dagrun based on new RUNID
 ### prepare data to be passed on to curl
@@ -95,8 +94,8 @@ curl_data="${curl_data}\"conf\":\"$config\""
 curl_data="${curl_data}}"
 ### done preparing data to be passed on to curl
 
-curl --netrc-file ${NETRC} -X POST \
-  https://${AIRFLOW_URL}/api/experimental/dags/${DAG}/dag_runs \
+curl --user "btx:btx" -X POST \
+  ${AIRFLOW_URL}/api/v1/dags/${DAG}/dag_runs \
   -H 'Cache-Control: no-cache' \
   -H 'Content-Type: application/json' \
   -d $curl_data
