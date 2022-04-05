@@ -90,7 +90,7 @@ config="{}"
 curl_data="{"
 curl_data="${curl_data}\"run_id\":\"$run_id\""
 curl_data="${curl_data},"
-curl_data="${curl_data}\"conf\":\"$config\""
+curl_data="${curl_data}\"conf\":$config"
 curl_data="${curl_data}}"
 ### done preparing data to be passed on to curl
 
