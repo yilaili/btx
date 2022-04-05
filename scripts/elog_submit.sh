@@ -1,6 +1,4 @@
 #!/bin/bash
-# Adapted from Silke's script.
-# TODO: ask for permission to use.
 
 usage()
 {
