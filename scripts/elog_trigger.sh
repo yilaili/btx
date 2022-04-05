@@ -11,6 +11,8 @@ $(basename "$0"):
       Definition of options
     -c|--config
       Input config file
+    -d|--dag
+      Airflow DAG name
     -q|--queue
       Queue to use on SLURM
     -n|--ncores
