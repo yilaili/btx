@@ -94,6 +94,8 @@ curl_data="${curl_data}\"conf\":\"$config\""
 curl_data="${curl_data}}"
 ### done preparing data to be passed on to curl
 
+echo $curl_data
+
 curl --user "btx:btx" -X POST \
   ${AIRFLOW_URL}/api/v1/dags/${DAG}/dagRuns \
   -H 'Cache-Control: no-cache' \
