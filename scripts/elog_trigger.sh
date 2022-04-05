@@ -75,7 +75,7 @@ curl -s --user "btx:btx" ${AIRFLOW_URL}/api/v1/dags/${DAG}
 
 # create new dagrun based on new RUNID
 ### prepare data to be passed on to curl
-run_id="${EXPERIMENT}-${RUN_NUM}"
+dag_run_id="${EXPERIMENT}-${RUN_NUM}"
 
 config="{}"
 #config="${config}\\\"experiment\\\":\\\"${EXPERIMENT}\\\""
@@ -88,7 +88,7 @@ config="{}"
 #config="${config}}"
 
 curl_data="{"
-curl_data="${curl_data}\"run_id\":\"$run_id\""
+curl_data="${curl_data}\"dag_run_id\":\"$dag_run_id\""
 curl_data="${curl_data},"
 curl_data="${curl_data}\"conf\":$config"
 curl_data="${curl_data}}"
