@@ -68,7 +68,7 @@ CORES=${CORES:=1}
 AIRFLOW_URL=http://172.21.32.139:8080/airflow-dev
 
 # test to make sure its up
-curl --user "btx:btx" ${AIRFLOW_URL}/api/v1/dags/${DAG}
+curl -s --user "btx:btx" ${AIRFLOW_URL}/api/v1/dags/${DAG}
 
 # temporary re-routing:
 #JID_UPDATE_COUNTERS=${JID_UPDATE_COUNTERS///psdm02.pcdsn/pslogin01.slac.stanford.edu}
@@ -95,7 +95,7 @@ curl_data="${curl_data}}"
 ### done preparing data to be passed on to curl
 
 curl --user "btx:btx" -X POST \
-  ${AIRFLOW_URL}/api/v1/dags/${DAG}/dag_runs \
+  ${AIRFLOW_URL}/api/v1/dags/${DAG}/dagRuns \
   -H 'Cache-Control: no-cache' \
   -H 'Content-Type: application/json' \
   -d $curl_data
