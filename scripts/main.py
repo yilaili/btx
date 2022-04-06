@@ -7,7 +7,7 @@ import traceback
 import yaml
 
 from btx.misc.shortcuts import AttrDict, conditional_mkdir
-from tasks import test, make_powder
+from tasks import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -26,6 +26,8 @@ def main():
         test(config)
     elif(config.task == 'make_powder'):
         make_powder(config)
+    elif(config.task == 'opt_distance'):
+        opt_distance(config)
 
     return 0, 'Task successfully executed'
 
