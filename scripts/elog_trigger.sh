@@ -67,8 +67,9 @@ CORES=${CORES:=1}
 
 AIRFLOW_URL=http://172.21.32.139:8080/airflow-dev
 
-# test to make sure its up
-curl -s --user "btx:btx" ${AIRFLOW_URL}/api/v1/dags/${DAG}
+# test to make sure the Airflow API is alive and well
+curl --verbose 'http://172.21.32.139:8080/airflow-dev/api/v1/health' -H 'content-type: application/json' --user "btx:btx"
+#curl -s --user "btx:btx" ${AIRFLOW_URL}/api/v1/dags/${DAG}
 
 # temporary re-routing:
 #JID_UPDATE_COUNTERS=${JID_UPDATE_COUNTERS///psdm02.pcdsn/pslogin01.slac.stanford.edu}
