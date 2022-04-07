@@ -55,7 +55,7 @@ class AgBehenate:
         print("Detector distance inferred from powder rings: %s mm" % (np.round(distance,2)))
         return distance
     
-    def opt_distance(self, powder, est_distance, pixel_size, wavelength, center=None, plot=False):
+    def opt_distance(self, powder, est_distance, pixel_size, wavelength, center=None, plot=None):
         """
         Optimize the sample-detector distance based on the powder image.
         
@@ -71,8 +71,8 @@ class AgBehenate:
             beam wavelength in Angstrom
         center : tuple
             detector center (xc,yc) in pixels
-        plot : bool
-            if True, plot the results
+        plot : str or None
+            output path for figure; if '', plot but don't save; if None, don't plot
         
         Returns
         -------
@@ -94,18 +94,18 @@ class AgBehenate:
         peaks_predicted = q2pix(rings, wavelength, est_distance, pixel_size)
         opt_distance = self.detector_distance(peaks_predicted[0], wavelength, pixel_size)
         
-        if plot:
+        if plot is not None:
             self.visualize_results(powder, center=center, 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
-                                   radialprofile=iprofile, qprofile=qprofile)
+                                   radialprofile=iprofile, qprofile=qprofile, plot=plot)
         
         return opt_distance
     
     def visualize_results(self, image, mask=None, vmax=50,
                           center=None, peaks_predicted=None, peaks_observed=None,
                           scores=None, Dq=None,
-                          radialprofile=None, qprofile=None):
+                          radialprofile=None, qprofile=None, plot=''):
         """
         Visualize fit, plotting (1) the residuals for the delta q scan, (2) the
         observed and predicted peaks in the radial intensity profile, and (3) the
@@ -154,3 +154,6 @@ class AgBehenate:
             if peaks_observed is not None:
                 for peak in peaks_observed:
                     circle = plt.Circle((center[0],center[1]), peak, fill=False, color='red', linestyle=':')
+        
+        if plot != '':
+            fig.savefig(plot, dpi=300)

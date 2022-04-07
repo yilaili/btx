@@ -14,7 +14,7 @@ class GeomOpt:
                                           run=run, # run number, int
                                           det_type=det_type) # detector name, str
         
-    def opt_distance(self, powder, sample='AgBehenate', center=None, plot=False):
+    def opt_distance(self, powder, sample='AgBehenate', center=None, plot=None):
         """
         Estimate the sample-detector distance based on the properties of the powder
         diffraction image. Currently only implemented for silver behenate.
@@ -28,8 +28,8 @@ class GeomOpt:
             sample type, currently implemented for AgBehenate only
         center : tuple
             detector center (xc,yc) in pixels. if None, assume assembled image center.
-        plot : bool
-            if True, visualize results of distance estimation
+        plot : str or None
+            output path for figure; if '', plot but don't save; if None, don't plot
 
         Returns
         -------

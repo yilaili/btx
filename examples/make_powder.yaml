@@ -1,11 +1,10 @@
 #
-#root_dir: '/cds/data/psdm/cxi/cxip20719/scratch/fpoitevi/powders/'
+root_dir: '/cds/data/psdm/mfx/mfxp19619/scratch/apeck/powders/'
 
-
-exp: 'cxix53120'
-run: '10'
-det_type: 'jungfrau4M'
+exp: 'mfxp19619'
+run: 19
+det_type: 'epix10k2M'
 
 task: 'make_powder'
-n_images: 1000
+n_images: 300
 batch_size: 100
