@@ -78,14 +78,6 @@ curl --verbose 'http://172.21.32.139:8080/airflow-dev/api/v1/health' -H 'content
 dag_run_id="${EXPERIMENT}-${RUN_NUM}"
 
 config="{}"
-#config="${config}\\\"experiment\\\":\\\"${EXPERIMENT}\\\""
-#config="${config},"
-#config="${config}\\\"run_id\\\":\\\"${RUN_NUM}\\\""
-#config="${config},"
-#config="${config}\\\"JID_UPDATE_COUNTERS\\\":\\\"${JID_UPDATE_COUNTERS}\\\""
-#config="${config},"
-#config="${config}\\\"config_file\\\":\\\"${CONFIGFILE}\\\""
-#config="${config}}"
 
 curl_data="{"
 curl_data="${curl_data}\"dag_run_id\":\"$dag_run_id\""
