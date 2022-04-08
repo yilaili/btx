@@ -8,6 +8,7 @@ from airflow.plugins_manager import AirflowPlugin
 
 from airflow.utils.decorators import apply_defaults
 
+import uuid
 import getpass
 import time
 import requests
@@ -58,40 +59,37 @@ class JIDSlurmOperator( BaseOperator ):
 
   @apply_defaults
   def __init__(self,
+      name: str,
       slurm_script: str,
-      bash_commands: str,
       user=getpass.getuser(),
       run_at='SLAC',
       poke_interval=30,
-      working_dir='...', #TODO
       *args, **kwargs ):
 
     super(JIDSlurmOperator, self).__init__(*args, **kwargs)
 
+    self.name = name
     self.slurm_script = slurm_script
-    self.bash_commands = bash_commands
-
-    self.working_dir = working_dir
     self.user = user
     self.run_at = run_at
     self.poke_interval = poke_interval
 
-  def create_control_doc( self, context, executable, parameters ):
+  def create_control_doc( self, context):
     return {
-      "_id" : executable,
+      "_id" : str(uuid.uuid4()),
       "experiment": context.get('dag_run').conf.get('experiment'),
       "run_num" : context.get('dag_run').conf.get('run_id'),
       "user" : self.user,
       "status" : '',
       "tool_id" : '', # lsurm job id
-      "def_id" : executable,
+      "def_id" : str(uuid.uuid4()),
       "def": {
-        "_id" : executable,
-        "name" : context['task'].task_id,
-        "executable" : f"{self.working_dir}/{executable}.slurm",
+        "_id" : str(uuid.uuid4()),
+        "name" : self.name,
+        "executable" : self.slurm_script,
         "trigger" : "MANUAL",
         "location" : self.run_at,
-        "parameters" : parameters,
+        "parameters" : context.get('dag_run').conf.get('parameters',''),
         "run_as_user" : self.user
       }
     }
@@ -151,20 +149,10 @@ class JIDSlurmOperator( BaseOperator ):
 
     LOG.info(f"Attempting to run at {self.run_at}...")
 
-    #this = f"{context.get('dag_run').conf.get('experiment_name')}-{context.get('dag_run').conf.get('run_num')}-{context.get('task').task_id}"
-    this = f"{context.get('dag_run').conf.get('experiment')}-{context.get('dag_run').conf.get('run_id')}-{context.get('task').task_id}"
-
-    # upload slurm script it to the destination
-    LOG.info("Uploading job scripts...")
-    job_file = f"{self.working_dir}/{this}.slurm"
-    self.put_file( job_file, self.slurm_script )
-
-    command_file = f"{self.working_dir}/{this}.sh"
-    self.put_file( command_file, self.bash_commands )
-
     # run job for it
     LOG.info("Queueing slurm job...")
-    control_doc = self.create_control_doc( context, this, '' )
+    control_doc = self.create_control_doc( context )
+    LOG.info(control_doc)
     msg = self.rpc( 'start_job', control_doc )
     LOG.info(f"jobid {msg['tool_id']} successfully submitted!")
     jobs = [ msg, ]
