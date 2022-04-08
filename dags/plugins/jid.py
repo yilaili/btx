@@ -55,8 +55,6 @@ class JIDSlurmOperator( BaseOperator ):
     'job_log_file': '{experiment_name}/job_log_file',
   }
 
-  template_fields = ['slurm_script','bash_commands',]
-
   @apply_defaults
   def __init__(self,
       slurm_script: str,
