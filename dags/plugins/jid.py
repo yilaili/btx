@@ -117,7 +117,7 @@ class JIDSlurmOperator( BaseOperator ):
       return True
     return False
 
-  def :wheelrpc( self, endpoint, control_doc, context, check_for_error=[] ):
+  def rpc( self, endpoint, control_doc, context, check_for_error=[] ):
 
     if not self.run_at in self.locations:
       raise AirflowException(f"JID location {self.run_at} is not configured")
