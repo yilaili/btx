@@ -40,7 +40,6 @@ if __name__ == '__main__':
             "run_id": str(run_num) + datetime.datetime.utcnow().isoformat(),
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
             "Authorization": auth_header,
-            "hello" : 'world',
             "config_file": args.config,
             "dag": args.dag,
             "queue": args.queue,
