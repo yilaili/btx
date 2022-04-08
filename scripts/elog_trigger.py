@@ -1,0 +1,50 @@
+#!/reg/g/psdm/sw/dm/conda/envs/psdm_ws_0_0_9/bin/python3
+
+import os
+import logging
+import argparse
+
+import requests
+from requests.auth import HTTPBasicAuth
+
+"""
+ARP initial trigger script for BTX processing.
+"""
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose", action='store_true', help="Turn on verbose logging")
+    parser.add_argument("-d", "--dag", help="Name of the DAG", default="test")
+    parser.add_argument("-c", "--config", help="Absolute path to the config file ( .yaml)", required=True)
+    parser.add_argument("-q", "--queue", help="The SLURM queue to be used", required=True)
+    parser.add_argument("-n", "--ncores", help="Number of cores", default=2)
+    args = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+
+    airflow_url = "http://172.21.32.139:8080/airflow-dev/"
+
+    # test to make sure the Airflow API is alive and well
+    resp = requests.get(airflow_url + "api/v1/health", auth=HTTPBasicAuth('btx', 'btx'))
+    resp.raise_for_status()
+
+    experiment_name = os.environ["EXPERIMENT"]
+    run_num = os.environ["RUN_NUM"]
+    auth_header = os.environ["Authorization"]
+
+    dag_run_data = {
+        "dag_run_id": f"{experiment_name}-{run_num}",
+        "conf": {
+            "experiment": experiment_name,
+            "run_id": int(run_num),
+            "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
+            "config_file": args.config,
+            "dag": args.dag,
+            "queue": args.queue,
+            "ncores": args.ncores
+        }
+    }
+
+    resp = requests.post(airflow_url + f"api/v1/dags/{args.dag}/dagRuns", json=dag_run_data, auth=HTTPBasicAuth('btx', 'btx'))
+    resp.raise_for_status()
+    print(resp.text)
+
