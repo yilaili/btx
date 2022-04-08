@@ -4,6 +4,7 @@ import os
 import logging
 import argparse
 import uuid
+import datetime
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -36,7 +37,7 @@ if __name__ == '__main__':
         "dag_run_id": str(uuid.uuid4()),
         "conf": {
             "experiment": experiment_name,
-            "run_id": int(run_num),
+            "run_id": str(run_num) + datetime.datetime.utcnow().isoformat(),
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
             "config_file": args.config,
             "dag": args.dag,
@@ -46,7 +47,6 @@ if __name__ == '__main__':
     }
 
     resp = requests.post(airflow_url + f"api/v1/dags/{args.dag}/dagRuns", json=dag_run_data, auth=HTTPBasicAuth('btx', 'btx'))
-    #resp = requests.post(airflow_url + f"api/v1/dags/{args.dag}/dagRuns", auth=HTTPBasicAuth('btx', 'btx'))
     resp.raise_for_status()
     print(resp.text)
 
