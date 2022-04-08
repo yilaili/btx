@@ -1,7 +1,7 @@
 from datetime import datetime
 from airflow import DAG
 #from airflow.operators.python_operator import PythonOperator
-from plugins import JIDSlurmOperator
+from plugins.jid import JIDSlurmOperator
 
 dag_id = "Hello_LCLS"
 
