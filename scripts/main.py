@@ -7,7 +7,7 @@ import traceback
 import yaml
 
 from btx.misc.shortcuts import AttrDict, conditional_mkdir
-from tasks import *
+from scripts.tasks import *
 
 def main():
     parser = argparse.ArgumentParser()
