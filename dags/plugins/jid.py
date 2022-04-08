@@ -123,6 +123,7 @@ class JIDSlurmOperator( BaseOperator ):
       raise AirflowException(f"JID location {self.run_at} is not configured")
 
     uri = self.locations[self.run_at] + self.endpoints[endpoint]
+    uri = uri.format(experiment_name = context.get('dag_run').conf.get('experiment'))
     LOG.info( f"Calling {uri} with {control_doc}..." )
     resp = requests.post( uri, json=control_doc, headers={'Authorization': context.get('dag_run').conf.get('Authorization')} )
     LOG.info(f" + {resp.status_code}: {resp.content.decode('utf-8')}")
