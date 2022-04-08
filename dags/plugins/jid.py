@@ -59,7 +59,6 @@ class JIDSlurmOperator( BaseOperator ):
 
   @apply_defaults
   def __init__(self,
-      name: str,
       slurm_script: str,
       user=getpass.getuser(),
       run_at='SLAC',
@@ -68,7 +67,6 @@ class JIDSlurmOperator( BaseOperator ):
 
     super(JIDSlurmOperator, self).__init__(*args, **kwargs)
 
-    self.name = name
     self.slurm_script = slurm_script
     self.user = user
     self.run_at = run_at
@@ -85,7 +83,7 @@ class JIDSlurmOperator( BaseOperator ):
       "def_id" : str(uuid.uuid4()),
       "def": {
         "_id" : str(uuid.uuid4()),
-        "name" : self.name,
+        "name" : self.task_id,
         "executable" : self.slurm_script,
         "trigger" : "MANUAL",
         "location" : self.run_at,
