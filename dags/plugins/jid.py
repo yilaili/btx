@@ -21,8 +21,8 @@ class JIDBaseOperator( BaseOperator ):
   ui_color = '#006699'
 
   locations = {
-    'SLAC': "http://psdm02:8446/jid_slac/",
-    'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/",
+    'SLAC': "http://psdm02:8446/jid_slac/jid/",
+    'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/jid/",
   }
   template_fields = ('experiment',)
 
@@ -45,8 +45,8 @@ class JIDSlurmOperator( BaseOperator ):
   ui_color = '#006699'
 
   locations = {
-    'SLAC': "http://psdm02:8446/jid_slac/",
-    'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/",
+    'SLAC': "http://psdm02:8446/jid_slac/jid/",
+    'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/jid/",
   }
 
   endpoints = {
