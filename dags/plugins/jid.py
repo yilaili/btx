@@ -158,7 +158,7 @@ class JIDSlurmOperator( BaseOperator ):
     time.sleep(10)
     LOG.info("Checking for job completion...")
     while jobs[0].get('status') in ('RUNNING', 'SUBMITTED'):
-      jobs = self.rpc( 'job_statuses', jobs, check_for_error=( ' error: ', 'Traceback ' ) )
+      jobs = self.rpc( 'job_statuses', jobs, check_for_error=( ' error: ', 'Traceback ' ) , context)
       time.sleep(self.poke_interval)
 
     # grab logs and put into xcom
