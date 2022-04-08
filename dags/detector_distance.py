@@ -24,11 +24,13 @@ dag = DAG(
 # Tasks SETUP
 task_id='make_powder'
 make_powder = JIDSlurmOperator( task_id=task_id,
-                                slurm_script=f'{slurm_script_directory}{task_id}.slurm')
+                                slurm_script=f'{slurm_script_directory}{task_id}.slurm'
+                                dag=dag)
 
 task_id='opt_distance'
 opt_distance = JIDSlurmOperator( task_id=task_id,
-                                 slurm_script=f'{slurm_script_directory}{task_id}.slurm')
+                                 slurm_script=f'{slurm_script_directory}{task_id}.slurm',
+                                 dag=dag)
 
 # Draw the DAG
 make_powder >> opt_distance
