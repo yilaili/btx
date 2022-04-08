@@ -51,7 +51,7 @@ class JIDSlurmOperator( BaseOperator ):
 
   endpoints = {
     'start_job': '{experiment_name}/start_job',
-    'job_statuses': '/job_statuses',
+    'job_statuses': 'job_statuses',
     'job_log_file': '{experiment_name}/job_log_file',
   }
 
