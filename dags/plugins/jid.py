@@ -50,9 +50,9 @@ class JIDSlurmOperator( BaseOperator ):
   }
 
   endpoints = {
-    'start_job': f'{experiment_name}/start_job',
+    'start_job': '{experiment_name}/start_job',
     'job_statuses': '/job_statuses',
-    'job_log_file': f'{experiment_name}/job_log_file',
+    'job_log_file': '{experiment_name}/job_log_file',
   }
 
   template_fields = ['slurm_script','bash_commands',]
