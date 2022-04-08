@@ -11,7 +11,8 @@ description='BTX detector distance estimation DAG'
 dag_name = os.path.splitext(os.path.basename(__file__))[0]
 
 default_args = {
-        'start_date': datetime( 2020,1,1 ),
+        'start_date': datetime( 2022,4,1 ),
+        'schedule_interval': None
 }
 
 dag = DAG(
