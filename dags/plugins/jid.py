@@ -75,7 +75,7 @@ class JIDSlurmOperator( BaseOperator ):
       "_id" : str(uuid.uuid4()),
       "experiment": context.get('dag_run').conf.get('experiment'),
       "run_num" : context.get('dag_run').conf.get('run_id'),
-      "user" : self.user,
+      "user" : context.get('dag_run').conf.get('user'),
       "status" : '',
       "tool_id" : '', # lsurm job id
       "def_id" : str(uuid.uuid4()),
