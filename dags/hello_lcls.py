@@ -14,5 +14,5 @@ with DAG(dag_id=dag_id, start_date=datetime(2022, 3, 28),
     #PythonOperator(task_id="say_hello", python_callable=say_hello)
     JIDSlurmOperator(
         task_id='make_powder',
-        slurm_script='/reg/g/psdm/tutorials/batchprocessing/arp_actual.py'
+        slurm_script='/reg/g/psdm/tutorials/batchprocessing/arp_submit.sh'
     )
