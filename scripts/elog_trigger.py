@@ -39,6 +39,7 @@ if __name__ == '__main__':
             "experiment": experiment_name,
             "run_id": str(run_num) + datetime.datetime.utcnow().isoformat(),
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
+            "Authorization": auth_header,
             "config_file": args.config,
             "dag": args.dag,
             "queue": args.queue,

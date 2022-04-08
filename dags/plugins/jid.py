@@ -117,14 +117,14 @@ class JIDSlurmOperator( BaseOperator ):
       return True
     return False
 
-  def rpc( self, endpoint, control_doc, check_for_error=[] ):
+  def rpc( self, endpoint, control_doc, context, check_for_error=[] ):
 
     if not self.run_at in self.locations:
       raise AirflowException(f"JID location {self.run_at} is not configured")
 
     uri = self.locations[self.run_at] + self.endpoints[endpoint]
     LOG.info( f"Calling {uri} with {control_doc}..." )
-    resp = requests.post( uri, json=control_doc, **self.requests_opts )
+    resp = requests.post( uri, json=control_doc, headers={'Authorization': context.get('dag_run').conf.get('Authorization')} )
     LOG.info(f" + {resp.status_code}: {resp.content.decode('utf-8')}")
     if not resp.status_code in ( 200, ):
       raise AirflowException(f"Bad response from JID {resp}: {resp.content}")
@@ -149,7 +149,7 @@ class JIDSlurmOperator( BaseOperator ):
     LOG.info("Queueing slurm job...")
     control_doc = self.create_control_doc( context )
     LOG.info(control_doc)
-    msg = self.rpc( 'start_job', control_doc )
+    msg = self.rpc( 'start_job', control_doc , context)
     LOG.info(f"jobid {msg['tool_id']} successfully submitted!")
     jobs = [ msg, ]
 
