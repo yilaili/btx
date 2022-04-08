@@ -71,6 +71,9 @@ class JIDSlurmOperator( BaseOperator ):
     self.poke_interval = poke_interval
 
   def create_control_doc( self, context):
+    def __params_to_args__(params):
+      return " ".join(["--" + k + " " + str(v) for k, v in params.items()])
+
     return {
       "_id" : str(uuid.uuid4()),
       "experiment": context.get('dag_run').conf.get('experiment'),
@@ -85,7 +88,7 @@ class JIDSlurmOperator( BaseOperator ):
         "executable" : self.slurm_script,
         "trigger" : "MANUAL",
         "location" : self.run_at,
-        "parameters" : context.get('dag_run').conf.get('parameters',''),
+        "parameters" : __params_to_args__(context.get('dag_run').conf.get('parameters', {})),
         "run_as_user" : self.user
       }
     }

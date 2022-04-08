@@ -42,10 +42,12 @@ if __name__ == '__main__':
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
             "Authorization": auth_header,
             "user": getpass.getuser(),
-            "config_file": args.config,
-            "dag": args.dag,
-            "queue": args.queue,
-            "ncores": args.ncores
+            "parameters": {
+                "config_file": args.config,
+                "dag": args.dag,
+                "queue": args.queue,
+                "ncores": args.ncores
+            }
         }
     }
 
