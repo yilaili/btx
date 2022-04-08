@@ -3,6 +3,7 @@
 import os
 import logging
 import argparse
+import uuid
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     auth_header = os.environ["Authorization"]
 
     dag_run_data = {
-        "dag_run_id": f"{experiment_name}-{run_num}",
+        "dag_run_id": str(uuid.uuid4()),
         "conf": {
             "experiment": experiment_name,
             "run_id": int(run_num),
