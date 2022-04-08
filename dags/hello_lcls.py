@@ -1,5 +1,4 @@
 from datetime import datetime
-import uuid
 from airflow import DAG
 #from airflow.operators.python_operator import PythonOperator
 from plugins.jid import JIDSlurmOperator
@@ -14,6 +13,6 @@ with DAG(dag_id=dag_id, start_date=datetime(2022, 3, 28),
 
     #PythonOperator(task_id="say_hello", python_callable=say_hello)
     JIDSlurmOperator(
-        task_id=str(uuid.uuid4()),
+        task_id='make_powder',
         slurm_script='/reg/g/psdm/tutorials/batchprocessing/arp_actual.py'
     )
