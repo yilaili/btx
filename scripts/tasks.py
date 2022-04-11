@@ -1,10 +1,8 @@
 import logging
-import numpy as np
 import os
 
 from btx.diagnostics.run import RunDiagnostics
 from btx.diagnostics.geom_opt import GeomOpt
-from btx.misc.shortcuts import conditional_mkdir
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
