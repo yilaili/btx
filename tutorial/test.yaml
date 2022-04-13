@@ -1,4 +1,5 @@
 setup:
-  root_dir: '/cds/data/drpsrcf/cxi/cxix53120/scratch/tasks/test/'
+  root_dir: '/cds/data/psdm/mfx/mfxp19619/scratch/test/'
 
 test:
+  parameter: 'value''
