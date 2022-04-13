@@ -3,9 +3,6 @@ import os
 from airflow import DAG
 from plugins.jid import JIDSlurmOperator
 
-# TEMPORARY DEFINITIONS
-slurm_script_directory="/cds/sw/package/autosfx/btx/adhoc/"
-
 # DAG SETUP
 description='BTX detector distance estimation DAG'
 dag_name = os.path.splitext(os.path.basename(__file__))[0]
