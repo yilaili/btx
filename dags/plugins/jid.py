@@ -71,7 +71,7 @@ class JIDSlurmOperator( BaseOperator ):
       return " ".join(["--" + k + " " + str(v) for k, v in params.items()])
 
     def __slurm_parameters__(params, task_id):
-      return __params_to_args__(params) + "--task " + task_id
+      return __params_to_args__(params) + " --task " + task_id
 
     return {
       "_id" : str(uuid.uuid4()),
