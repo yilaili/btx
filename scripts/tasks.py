@@ -11,27 +11,31 @@ def test(config):
     print(config)
 
 def make_powder(config):
+    setup = config.setup
+    task = config.make_powder
     """ Generate the max, avg, and std powders for a given run. """
-    rd = RunDiagnostics(exp=config.exp,
-                        run=config.run,
-                        det_type=config.det_type)
+    rd = RunDiagnostics(exp=setup.exp,
+                        run=setup.run,
+                        det_type=setup.det_type)
 
-    logger.debug(f'Computing Powder for run {config.run} of {config.exp}...')
-    rd.compute_run_stats(n_images=config.n_images, 
+    logger.debug(f'Computing Powder for run {setup.run} of {setup.exp}...')
+    rd.compute_run_stats(n_images=task.n_images,
                          powder_only=True)
-    logger.info(f'Saving Powders to {config.root_dir}')
-    rd.save_powders(config.root_dir)
+    logger.info(f'Saving Powders to {setup.root_dir}')
+    rd.save_powders(setup.root_dir)
     logger.debug('Done!')
     
 def opt_distance(config):
+    setup = config.setup
+    task = config.opt_distance
     """ Optimize the detector distance from an AgBehenate run. """
-    geom_opt = GeomOpt(exp=config.exp,
-                       run=config.run,
-                       det_type=config.det_type)
-    config.center = tuple([float(elem) for elem in config.center.split()])
-    logger.debug(f'Optimizing detector distance for run {config.run} of {config.exp}...')
-    dist = geom_opt.opt_distance(powder=config.powder,
-                                 center=config.center,
-                                 plot=os.path.join(config.root_dir, config.plot))
+    geom_opt = GeomOpt(exp=setup.exp,
+                       run=setup.run,
+                       det_type=setup.det_type)
+    task.center = tuple([float(elem) for elem in task.center.split()])
+    logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
+    dist = geom_opt.opt_distance(powder=task.powder,
+                                 center=task.center,
+                                 plot=os.path.join(setup.root_dir, task.plot))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
     logger.debug('Done!')

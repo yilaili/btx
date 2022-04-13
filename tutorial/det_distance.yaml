@@ -1,0 +1,14 @@
+setup:
+  root_dir: '/cds/data/psdm/mfx/mfxp19619/scratch/btx/'
+  exp: 'mfxp19619'
+  run: 19
+  det_type: 'epix10k2M'
+
+make_powder:
+  n_images: 300
+  batch_size: 100
+
+opt_distance:
+  powder: '/cds/data/psdm/mfx/mfxp19619/scratch/apeck/powders/powder_max_r19.npy'
+  center: 834 832.5
+  plot: 'optd_run19.png'

@@ -12,22 +12,24 @@ from scripts.tasks import *
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to config file.')
+    parser.add_argument('-t', '--task', type=str, help='Task to run.')
     config_filepath = parser.parse_args().config
+    task = parser.parse_args().task
     with open(config_filepath, "r") as config_file:
         config = AttrDict(yaml.safe_load(config_file))
 
-    if not conditional_mkdir(config.root_dir):
+    # Create output directory.
+    if not conditional_mkdir(config.setup.root_dir):
         print(f"Error: cannot create root path.")
         return -1
-
-    shutil.copy2(config_filepath, config.root_dir)
-    
-    if(config.task == 'test'):
-        test(config)
-    elif(config.task == 'make_powder'):
-        make_powder(config)
-    elif(config.task == 'opt_distance'):
-        opt_distance(config)
+    # Copy config file to output directory.
+    shutil.copy2(config_filepath, config.setup.root_dir)
+    # Call 'task' function if it exists.
+    try:
+        globals()[task]
+    except Exception as e:
+        print(f'{task} not found.')
+    globals()[task](config)
 
     return 0, 'Task successfully executed'
 
