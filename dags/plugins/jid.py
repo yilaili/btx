@@ -43,9 +43,9 @@ class JIDSlurmOperator( BaseOperator ):
 
     super(JIDSlurmOperator, self).__init__(*args, **kwargs)
 
-    self.slurm_script = self.get_slurm_script()
     self.user = user
     self.run_at = run_at
+    self.slurm_script = self.get_slurm_script()
     self.poke_interval = poke_interval
 
   def create_control_doc( self, context):
