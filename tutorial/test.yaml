@@ -2,4 +2,4 @@ setup:
   root_dir: '/cds/data/psdm/mfx/mfxp19619/scratch/test/'
 
 test:
-  parameter: 'value''
+  parameter: 'value'
