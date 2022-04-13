@@ -1,10 +1,9 @@
-#
-root_dir: '/cds/data/psdm/mfx/mfxp19619/scratch/btx/powders/'
+setup:
+  root_dir: '/cds/data/psdm/mfx/mfxp19619/scratch/btx/powders/'
+  exp: 'mfxp19619'
+  run: 19
+  det_type: 'epix10k2M'
 
-exp: 'mfxp19619'
-run: 19
-det_type: 'epix10k2M'
-
-task: 'make_powder'
-n_images: 300
-batch_size: 100
+make_powder:
+  n_images: 300
+  batch_size: 100

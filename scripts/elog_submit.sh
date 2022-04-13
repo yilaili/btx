@@ -9,12 +9,14 @@ $(basename "$0"):
   OPTIONS:
     -h|--help
       Definition of options
-    -c|--config
-      Input config file
     -q|--queue
       Queue to use on SLURM
     -n|--ncores
       Number of cores
+    -c|--config_file
+      Input config file
+    -t|--task
+      Task name
 EOF
 }
 
@@ -33,13 +35,18 @@ do
       shift
       shift
       ;;
+    -n|--ncores)
+      CORES="$2"
+      shift
+      shift
+      ;;
     -c|--config)
       CONFIGFILE="$2"
       shift
       shift
       ;;
-    -n|--ncores)
-      CORES="$2"
+    -t|--task)
+      TASK="$2"
       shift
       shift
       ;;
@@ -63,14 +70,14 @@ sbatch << EOF
 #SBATCH -p ${QUEUE}
 #SBATCH -t 10:00:00
 #SBATCH --exclusive
-#SBATCH --job-name "task"
-#SBATCH --ntasks=$CORES
+#SBATCH --job-name ${TASK}
+#SBATCH --ntasks=${CORES}
 
-source /reg/g/psdm/etc/psconda.sh -py3
-export PYTHONPATH="${PYTHONPATH}:/cds/sw/package/autosfx/btx"
+source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
+export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
 
-echo "$MAIN_PY $CONFIGFILE"
-$MAIN_PY -c $CONFIGFILE
+echo "$MAIN_PY -c $CONFIGFILE -t $TASK"
+$MAIN_PY -c $CONFIGFILE -t $TASK
 EOF
 
 echo "Job sent to queue"

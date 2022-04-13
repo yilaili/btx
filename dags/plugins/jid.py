@@ -1,7 +1,3 @@
-import os
-from datetime import datetime
-
-from airflow import DAG
 from airflow.models import BaseOperator, SkipMixin
 from airflow.exceptions import AirflowException, AirflowSkipException
 from airflow.plugins_manager import AirflowPlugin
@@ -16,37 +12,20 @@ import requests
 import logging
 LOG = logging.getLogger(__name__)
 
+class JIDSlurmOperator( BaseOperator ):
+  """Airflow Operator to submit SLURM jobs through the JID.
+  """
 
-class JIDBaseOperator( BaseOperator ):
   ui_color = '#006699'
 
   locations = {
     'SLAC': "http://psdm02:8446/jid_slac/jid/ws/",
     'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/jid/ws/",
   }
-  template_fields = ('experiment',)
 
-  @apply_defaults
-  def __init__(self,
-      experiment: str,
-      user=getpass.getuser(),
-      run_at='SLAC',
-      poke_interval=30,
-      *args, **kwargs ):
-    super( JIDBaseOperator, self ).__init__(*args, **kwargs)
-    self.experiment = experiment
-    self.user = user
-    self.run_at = run_at
-    self.poke_interval = poke_interval
-
-
-class JIDSlurmOperator( BaseOperator ):
-
-  ui_color = '#006699'
-
-  locations = {
-    'SLAC': "http://psdm02:8446/jid_slac/jid/ws/",
-    'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/jid/ws/",
+  btx_locations = {
+    'SLAC': "/cds/sw/package/autosfx/btx/",
+    'SRCF_FFB': "/sdf/group/lcls/ds/sw/autosfx/btx/",
   }
 
   endpoints = {
@@ -57,7 +36,6 @@ class JIDSlurmOperator( BaseOperator ):
 
   @apply_defaults
   def __init__(self,
-      slurm_script: str,
       user=getpass.getuser(),
       run_at='SLAC',
       poke_interval=30,
@@ -65,14 +43,31 @@ class JIDSlurmOperator( BaseOperator ):
 
     super(JIDSlurmOperator, self).__init__(*args, **kwargs)
 
-    self.slurm_script = slurm_script
+    self.slurm_script = self.get_slurm_script()
     self.user = user
     self.run_at = run_at
     self.poke_interval = poke_interval
 
   def create_control_doc( self, context):
+    """
+    Create Control Doc.
+
+    Parameters
+    ----------
+    context: Airflow dictionary object.
+      Contains info about the current task, passed to execute().
+      See: https://airflow.apache.org/docs/apache-airflow/stable/macros-ref.html#default-variables.
+
+    Returns
+    -------
+    Dictionary to POST as JSON to RPC client server.
+
+    """
     def __params_to_args__(params):
       return " ".join(["--" + k + " " + str(v) for k, v in params.items()])
+
+    def __slurm_parameters__(params, task_id):
+      return __params_to_args__(params) + "--task " + task_id
 
     return {
       "_id" : str(uuid.uuid4()),
@@ -80,7 +75,7 @@ class JIDSlurmOperator( BaseOperator ):
       "run_num" : context.get('dag_run').conf.get('run_id'),
       "user" : context.get('dag_run').conf.get('user'),
       "status" : '',
-      "tool_id" : '', # lsurm job id
+      "tool_id" : '',
       "def_id" : str(uuid.uuid4()),
       "def": {
         "_id" : str(uuid.uuid4()),
@@ -88,10 +83,17 @@ class JIDSlurmOperator( BaseOperator ):
         "executable" : self.slurm_script,
         "trigger" : "MANUAL",
         "location" : self.run_at,
-        "parameters" : __params_to_args__(context.get('dag_run').conf.get('parameters', {})),
+        "parameters" : __slurm_parameters__(context.get('dag_run').conf.get('parameters', {}),
+                                            self.task_id),
         "run_as_user" : self.user
       }
     }
+
+  def get_slurm_script(self):
+    if not self.run_at in self.btx_locations:
+      raise AirflowException(f"BTX location {self.run_at} is not configured")
+    slurm_script = self.btx_locations[self.run_at] + "scripts/elog_submit.sh"
+    return slurm_script
 
   def get_file_uri( self, filepath ):
     if not self.run_at in self.locations:
@@ -175,4 +177,4 @@ class JIDSlurmOperator( BaseOperator ):
 
 class JIDPlugins(AirflowPlugin):
     name = 'jid_plugins'
-    operators = [JIDBaseOperator,JIDSlurmOperator]
+    operators = [JIDSlurmOperator]

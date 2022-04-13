@@ -1,3 +1,4 @@
-task: 'test'
+setup:
+  root_dir: '/cds/data/drpsrcf/cxi/cxix53120/scratch/tasks/test/'
 
-#root_dir: '/cds/data/drpsrcf/cxi/cxix53120/scratch/tasks/test/'
+test:

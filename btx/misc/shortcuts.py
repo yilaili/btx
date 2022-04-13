@@ -8,22 +8,42 @@ def conditional_mkdir(path):
     return True
 
 class AttrDict(dict):
-    """Class to convert a dictionary to a class.
+    """ Nested Attribute Dictionary
 
-    Parameters
-    ----------
-    dict: dictionary
+    A class to convert a nested Dictionary into an object with key-values
+    accessible using attribute notation (AttrDict.attribute) in addition to
+    key notation (Dict["key"]). This class recursively sets Dicts to objects,
+    allowing you to recurse into nested dicts (like: AttrDict.attr.attr)
 
+    Adapted from: https://stackoverflow.com/a/48806603
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, mapping=None, *args, **kwargs):
         """Return a class with attributes equal to the input dictionary."""
         super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
+        if mapping is not None:
+            for key, value in mapping.items():
+                self.__setitem__(key, value)
         self.check_required_arguments()
+
+    def __setitem__(self, key, value):
+        if isinstance(value, dict):
+            value = AttrDict(value)
+        super(AttrDict, self).__setitem__(key, value)
+        self.__dict__[key] = value  # for code completion in editors
+
+    def __getattr__(self, item):
+        try:
+            return self.__getitem__(item)
+        except KeyError:
+            raise AttributeError(item)
 
     def check_required_arguments(self):
         """Check that the config object has required attributes."""
-        if not hasattr(self, 'root_dir'):
-            print(f"Error: required argument 'root_dir' is not configured.")
+        if not hasattr(self, 'setup'):
+            print(f"Error: required argument 'global' is not configured.")
             return -1
+        else:
+            if not hasattr(self.setup, 'root_dir'):
+                print(f"Error: required argument 'global.root_dir' is not configured.")
+                return -1
