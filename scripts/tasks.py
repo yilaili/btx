@@ -1,5 +1,6 @@
 import logging
 import os
+import requests
 
 from btx.diagnostics.run import RunDiagnostics
 from btx.diagnostics.geom_opt import GeomOpt
@@ -7,8 +8,12 @@ from btx.diagnostics.geom_opt import GeomOpt
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Fetch the URL to post progress update
+update_url = os.environ.get('JID_UPDATE_COUNTERS')
+
 def test(config):
     print(config)
+    requests.post(update_url, json=[config])
 
 def make_powder(config):
     setup = config.setup
