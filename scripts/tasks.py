@@ -13,7 +13,9 @@ update_url = os.environ.get('JID_UPDATE_COUNTERS')
 
 def test(config):
     print(config)
-    requests.post(update_url, json=[config])
+    requests.post(update_url,
+                  json=[{"key": "<strong>Counter</strong>", "value" : "<span style='color: red'>0</span>"},])
+    #requests.post(update_url, json=[config])
 
 def make_powder(config):
     setup = config.setup
