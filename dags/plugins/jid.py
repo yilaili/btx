@@ -38,6 +38,7 @@ class JIDSlurmOperator( BaseOperator ):
   def __init__(self,
       user=getpass.getuser(),
       run_at='SLAC',
+      slurm_script=None,
       poke_interval=30,
       *args, **kwargs ):
 
@@ -45,7 +46,10 @@ class JIDSlurmOperator( BaseOperator ):
 
     self.user = user
     self.run_at = run_at
-    self.slurm_script = self.get_slurm_script()
+    if slurm_script is None:
+      self.slurm_script = self.get_slurm_script()
+    else:
+      self.slurm_script = slurm_script
     self.poke_interval = poke_interval
 
   def create_control_doc( self, context):
