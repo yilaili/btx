@@ -40,7 +40,7 @@ do
       shift
       shift
       ;;
-    -c|--config)
+    -c|--config_file)
       CONFIGFILE="$2"
       shift
       shift
