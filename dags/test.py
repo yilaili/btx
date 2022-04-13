@@ -17,7 +17,7 @@ dag = DAG(
 
 # Tasks SETUP
 task_id='test'
-make_powder = JIDSlurmOperator( task_id=task_id, dag=dag)
+test = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 # Draw the DAG
 test
