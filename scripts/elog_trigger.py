@@ -46,7 +46,8 @@ if __name__ == '__main__':
                 "config_file": args.config,
                 "dag": args.dag,
                 "queue": args.queue,
-                "ncores": args.ncores
+                "ncores": args.ncores,
+                "jid_update_counters": os.environ["JID_UPDATE_COUNTERS"]
             }
         }
     }

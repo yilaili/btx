@@ -9,15 +9,15 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Fetch the URL to post progress update
-update_url = os.environ.get('JID_UPDATE_COUNTERS')
+#update_url = os.environ.get('JID_UPDATE_COUNTERS')
 
-def test(config):
+def test(config, jid_update_counters=None):
     print(config)
-    requests.post(update_url,
+    requests.post(jid_update_counters,
                   json=[{"key": "<strong>Counter</strong>", "value" : "<span style='color: red'>0</span>"},])
     #requests.post(update_url, json=[config])
 
-def make_powder(config):
+def make_powder(config, jid_update_counters=None):
     setup = config.setup
     task = config.make_powder
     """ Generate the max, avg, and std powders for a given run. """
@@ -32,7 +32,7 @@ def make_powder(config):
     rd.save_powders(setup.root_dir)
     logger.debug('Done!')
     
-def opt_distance(config):
+def opt_distance(config, jid_update_counters=None):
     setup = config.setup
     task = config.opt_distance
     """ Optimize the detector distance from an AgBehenate run. """
