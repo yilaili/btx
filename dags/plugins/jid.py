@@ -19,8 +19,8 @@ class JIDSlurmOperator( BaseOperator ):
   ui_color = '#006699'
 
   locations = {
-    'SLAC': "http://psdm02:8446/jid_slac/jid/ws/",
-    'SRCF_FFB': "http://psdm02:8446/jid_srcf_ffb/jid/ws/",
+    'SLAC': "http://psdm02:8442/jid_slac/jid/ws/",
+    'SRCF_FFB': "http://psdm02:8442/jid_srcf_ffb/jid/ws/",
   }
 
   btx_locations = {
