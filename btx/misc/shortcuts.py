@@ -24,7 +24,6 @@ class AttrDict(dict):
         if mapping is not None:
             for key, value in mapping.items():
                 self.__setitem__(key, value)
-        self.check_required_arguments()
 
     def __setitem__(self, key, value):
         if isinstance(value, dict):
@@ -37,13 +36,3 @@ class AttrDict(dict):
             return self.__getitem__(item)
         except KeyError:
             raise AttributeError(item)
-
-    def check_required_arguments(self):
-        """Check that the config object has required attributes."""
-        if not hasattr(self, 'setup'):
-            print(f"Error: required argument 'global' is not configured.")
-            return -1
-        else:
-            if not hasattr(self.setup, 'root_dir'):
-                print(f"Error: required argument 'global.root_dir' is not configured.")
-                return -1

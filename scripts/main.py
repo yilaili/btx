@@ -17,6 +17,7 @@ def main():
     task = parser.parse_args().task
     with open(config_filepath, "r") as config_file:
         config = AttrDict(yaml.safe_load(config_file))
+        #TODO: check required arguments in config dictionary here.
 
     # Create output directory.
     if not conditional_mkdir(config.setup.root_dir):
