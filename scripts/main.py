@@ -13,10 +13,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to config file.')
     parser.add_argument('-t', '--task', type=str, help='Task to run.')
-    parser.add_argument('-j', '--jid_update_counters', help='JID_UPDATE_COUNTERS_VAR')
     config_filepath = parser.parse_args().config
     task = parser.parse_args().task
-    jid_update_counters = parser.parse_args().jid_update_counters
     with open(config_filepath, "r") as config_file:
         config = AttrDict(yaml.safe_load(config_file))
 
@@ -31,7 +29,7 @@ def main():
         globals()[task]
     except Exception as e:
         print(f'{task} not found.')
-    globals()[task](config, jid_update_counters)
+    globals()[task](config)
 
     return 0, 'Task successfully executed'
 

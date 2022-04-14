@@ -50,11 +50,6 @@ do
       shift
       shift
       ;;
-    -j|--jid_update_counters)
-      JID_UPDATE_COUNTERS_VAR="$2"
-      shift
-      shift
-      ;;
     *)
       POSITIONAL+=("$1")
       shift
@@ -81,8 +76,8 @@ sbatch << EOF
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
 
-echo "$MAIN_PY -c $CONFIGFILE -t $TASK -j $JID_UPDATE_COUNTERS_VAR"
-$MAIN_PY -c $CONFIGFILE -t $TASK -j $JID_UPDATE_COUNTERS_VAR
+echo "$MAIN_PY -c $CONFIGFILE -t $TASK"
+$MAIN_PY -c $CONFIGFILE -t $TASK
 EOF
 
 echo "Job sent to queue"
