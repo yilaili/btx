@@ -4,13 +4,15 @@ import h5py
 import os
 from mpi4py import MPI
 from btx.interfaces.psana_interface import *
+from btx.misc.shortcuts import conditional_mkdir
 from psalgos.pypsalgos import PyAlgos
 
 class PeakFinder:
     
     """
-    Perform adaptive peak-finding on a psana run and save the results to cxi
-    format. Adapted from psocake.
+    Perform adaptive peak-finding on a psana run and save the results to cxi format. 
+    Adapted from psocake. More information about peak finding is available below:
+    https://confluence.slac.stanford.edu/display/PSDM/Hit+and+Peak+Finding+Algorithms
     """
     
     def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, dist=None,
@@ -26,9 +28,9 @@ class PeakFinder:
         # peak-finding algorithm parameters
         self.npix_min = npix_min # int, min number of pixels in peak
         self.npix_max = npix_max # int, max number of pixels in peak
-        self.amax_thr = amax_thr 
-        self.atot_thr = atot_thr
-        self.son_min = son_min # in psocake, nsigm=son_min
+        self.amax_thr = amax_thr # float, threshold on pixel amplitude
+        self.atot_thr = atot_thr # float, threshold on total amplitude
+        self.son_min = son_min # float, minimal S/N in peak; in psocake, nsigm=son_min
         self.peak_rank = peak_rank # radius in which central pix is a local max, int
         self.r0 = r0 # radius in pixels of ring for background evaluation, float
         self.dr = dr # width in pixels of ring for background evaluation, float
@@ -124,10 +126,11 @@ class PeakFinder:
         tag : str
             file nomenclature suffix, optional
         """
+        conditional_mkdir(self.outdir)
         if (tag != '') and (tag[0]!='_'):
             tag = '_' + tag
         self.tag = tag # track for writing summary file
-        self.fname = os.path.join(self.outdir, f'{self.psi.exp}_{self.psi.run:04}_{self.rank}{tag}.cxi')
+        self.fname = os.path.join(self.outdir, f'{self.psi.exp}_r{self.psi.run:04}_{self.rank}{tag}.cxi')
         
         outh5 = h5py.File(self.fname, 'w')
         
@@ -356,7 +359,7 @@ class PeakFinder:
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
 
             # generate virtual dataset and list for
-            vfname = os.path.join(self.outdir, f'{self.psi.exp}_{self.psi.run:04}{self.tag}.cxi')
+            vfname = os.path.join(self.outdir, f'{self.psi.exp}_r{self.psi.run:04}{self.tag}.cxi')
             self.generate_vds(vfname)
             with open(os.path.join(self.outdir, f'r{self.psi.run:04}{self.tag}.lst'), 'w') as f:
                 f.write(f"{vfname}\n")
@@ -408,7 +411,7 @@ class PeakFinder:
         fnames = []
         for fi in range(self.size):
             if self.n_hits_per_rank[fi] > 0:
-                fnames.append(os.path.join(self.outdir, f'{self.psi.exp}_{self.psi.run:04}_{fi}{self.tag}.cxi'))
+                fnames.append(os.path.join(self.outdir, f'{self.psi.exp}_r{self.psi.run:04}_{fi}{self.tag}.cxi'))
         if len(fnames) == 0:
             sys.exit("No hits found")
         print(f"Files with peaks: {fnames}")
@@ -460,9 +463,9 @@ def parse_input():
     parser.add_argument('--max_peaks', help='Maximum number of peaks per image', required=False, type=int, default=2048)
     parser.add_argument('--npix_min', help='Minimum number of pixels per peak', required=False, type=int, default=2)
     parser.add_argument('--npix_max', help='Maximum number of pixels per peak', required=False, type=int, default=30)
-    parser.add_argument('--amax_thr', help='', required=False, type=float, default=80.)
-    parser.add_argument('--atot_thr', help='', required=False, type=float, default=120.)
-    parser.add_argument('--son_min', help='', required=False, type=float, default=7.0)
+    parser.add_argument('--amax_thr', help='Minimum intensity threshold for starting a peak', required=False, type=float, default=80.)
+    parser.add_argument('--atot_thr', help='Minimum summed intensity threshold for pixel collection', required=False, type=float, default=120.)
+    parser.add_argument('--son_min', help='Minimum signal-to-noise ratio to be considered a peak', required=False, type=float, default=7.0)
     parser.add_argument('--peak_rank', help='Radius in which central peak pixel is a local maximum', required=False, type=int, default=3)
     parser.add_argument('--r0', help='Radius of ring for background evaluation in pixels', required=False, type=float, default=3.0)
     parser.add_argument('--dr', help='Width of ring for background evaluation in pixels', required=False, type=float, default=2.0)
