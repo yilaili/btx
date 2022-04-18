@@ -2,8 +2,10 @@ import logging
 import os
 import requests
 
+from btx.misc.shortcuts import conditional_mkdir
 from btx.diagnostics.run import RunDiagnostics
 from btx.diagnostics.geom_opt import GeomOpt
+from btx.processing.peak_finder import PeakFinder
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -43,4 +45,21 @@ def opt_distance(config):
                                  center=task.center,
                                  plot=os.path.join(setup.root_dir, task.plot))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
+    logger.debug('Done!')
+
+def find_peaks(config):
+    setup = config.setup
+    task = config.opt_distance
+    """ Perform adaptive peak finding on run. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    conditional_mkdir(taskdir)
+    pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, outdir=os.path.join(taskdir ,f"r{setup.run:04}"), 
+                    tag=task.tag, mask=task.mask, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
+                    npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr, 
+                    son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm)
+    logger.debug(f'Performing peak finding for run {setup.run} of {setup.exp}...')
+    pf.find_peaks()
+    pf.curate_cxi()
+    pf.summarize() 
+    logger.info(f'Saving CXI files and summary to {task_dir}/r{setup.run:04}')
     logger.debug('Done!')
