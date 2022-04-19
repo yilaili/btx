@@ -49,7 +49,7 @@ def opt_distance(config):
 
 def find_peaks(config):
     setup = config.setup
-    task = config.opt_distance
+    task = config.find_peaks
     """ Perform adaptive peak finding on run. """
     taskdir = os.path.join(setup.root_dir, 'index')
     conditional_mkdir(taskdir)
