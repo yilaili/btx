@@ -1,12 +1,5 @@
 import os
 
-def conditional_mkdir(path):
-    if not os.path.exists(path): # path does not exist, create it
-        os.makedirs(path)
-        return True
-
-    return True
-
 class AttrDict(dict):
     """ Nested Attribute Dictionary
 

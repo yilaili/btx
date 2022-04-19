@@ -76,8 +76,14 @@ sbatch << EOF
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
 
+if [ ${CORES} -gt 1 ]
+then 
+echo "mpirun $MAIN_PY -c $CONFIGFILE -t $TASK"
+mpirun $MAIN_PY -c $CONFIGFILE -t $TASK
+else
 echo "$MAIN_PY -c $CONFIGFILE -t $TASK"
 $MAIN_PY -c $CONFIGFILE -t $TASK
+fi
 EOF
 
 echo "Job sent to queue"

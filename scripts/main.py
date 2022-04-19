@@ -6,7 +6,7 @@ import sys
 import traceback
 import yaml
 
-from btx.misc.shortcuts import AttrDict, conditional_mkdir
+from btx.misc.shortcuts import AttrDict
 from scripts.tasks import *
 
 def main():
@@ -20,9 +20,12 @@ def main():
         #TODO: check required arguments in config dictionary here.
 
     # Create output directory.
-    if not conditional_mkdir(config.setup.root_dir):
-        print(f"Error: cannot create root path.")
-        return -1
+    try:
+        os.makedirs(config.setup.root_dir, exist_ok=True)
+    except:
+        print(f"Error: cannot create root path.") 
+        return -1 
+
     # Copy config file to output directory.
     shutil.copy2(config_filepath, config.setup.root_dir)
     # Call 'task' function if it exists.

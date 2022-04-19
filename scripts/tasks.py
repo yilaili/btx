@@ -2,7 +2,6 @@ import logging
 import os
 import requests
 
-from btx.misc.shortcuts import conditional_mkdir
 from btx.diagnostics.run import RunDiagnostics
 from btx.diagnostics.geom_opt import GeomOpt
 from btx.processing.peak_finder import PeakFinder
@@ -52,7 +51,7 @@ def find_peaks(config):
     task = config.find_peaks
     """ Perform adaptive peak finding on run. """
     taskdir = os.path.join(setup.root_dir, 'index')
-    conditional_mkdir(taskdir)
+    os.makedirs(taskdir, exist_ok=True)
     pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, outdir=os.path.join(taskdir ,f"r{setup.run:04}"), 
                     tag=task.tag, mask=task.mask, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr, 
@@ -61,5 +60,5 @@ def find_peaks(config):
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize() 
-    logger.info(f'Saving CXI files and summary to {task_dir}/r{setup.run:04}')
+    logger.info(f'Saving CXI files and summary to {taskdir}/r{setup.run:04}')
     logger.debug('Done!')

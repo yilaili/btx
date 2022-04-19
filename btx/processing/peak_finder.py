@@ -4,7 +4,6 @@ import h5py
 import os
 from mpi4py import MPI
 from btx.interfaces.psana_interface import *
-from btx.misc.shortcuts import conditional_mkdir
 from psalgos.pypsalgos import PyAlgos
 
 class PeakFinder:
@@ -126,7 +125,7 @@ class PeakFinder:
         tag : str
             file nomenclature suffix, optional
         """
-        conditional_mkdir(self.outdir)
+        os.makedirs(self.outdir, exist_ok=True)
         if (tag != '') and (tag[0]!='_'):
             tag = '_' + tag
         self.tag = tag # track for writing summary file
