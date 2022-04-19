@@ -40,6 +40,7 @@ if __name__ == '__main__':
             "experiment": experiment_name,
             "run_id": str(run_num) + datetime.datetime.utcnow().isoformat(),
             "JID_UPDATE_COUNTERS": os.environ["JID_UPDATE_COUNTERS"],
+            "JID_JOB_ID": os.environ["JID_JOB_ID"],
             "Authorization": auth_header,
             "user": getpass.getuser(),
             "parameters": {
