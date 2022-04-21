@@ -6,7 +6,7 @@ import argparse
 import uuid
 import datetime
 import getpass
-import time
+#import time
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -57,4 +57,4 @@ if __name__ == '__main__':
     resp.raise_for_status()
     print(resp.text)
 
-    time.sleep(300)
+    #time.sleep(300)
