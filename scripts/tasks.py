@@ -14,8 +14,7 @@ update_url = os.environ.get('JID_UPDATE_COUNTERS')
 def test(config):
     print(config)
     requests.post(update_url, json=[ { "key": "root_dir", "value": f"{config.setup.root_dir}" },
-                                     { "key": "parameter", "value": f"{config.test.parameter}"} ])
-    #requests.post(update_url, json=[config])
+                                     { "key": "experiment_name", "value": "mfxp19619"} ])
 
 def make_powder(config):
     setup = config.setup
