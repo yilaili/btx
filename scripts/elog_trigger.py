@@ -6,6 +6,7 @@ import argparse
 import uuid
 import datetime
 import getpass
+import time
 
 import requests
 from requests.auth import HTTPBasicAuth
