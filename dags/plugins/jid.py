@@ -75,7 +75,7 @@ class JIDSlurmOperator( BaseOperator ):
 
     return {
       "_id" : str(uuid.uuid4()),
-      "parent_job_id": context.get('dag_run').conf.get('JID_JOB_ID'),
+      "arp_root_job_id": context.get('dag_run').conf.get('ARP_ROOT_JOB_ID'),
       "experiment": context.get('dag_run').conf.get('experiment'),
       "run_num" : context.get('dag_run').conf.get('run_id'),
       "user" : context.get('dag_run').conf.get('user'),
