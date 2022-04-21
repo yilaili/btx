@@ -94,10 +94,13 @@ class JIDSlurmOperator( BaseOperator ):
       }
     }
 
-  def get_slurm_script(self):
+  def get_slurm_script(self, relative_path=None):
     if not self.run_at in self.btx_locations:
       raise AirflowException(f"BTX location {self.run_at} is not configured")
-    slurm_script = self.btx_locations[self.run_at] + "scripts/elog_submit.sh"
+    if relative_path is None:
+      slurm_script = self.btx_locations[self.run_at] + "scripts/elog_submit.sh"
+    else:
+      slurm_script = self.btx_locations[self.run_at] + f"scripts/{relative_path}"
     return slurm_script
 
   def get_file_uri( self, filepath ):
