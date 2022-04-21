@@ -300,9 +300,10 @@ class PeakFinder:
         outh5 = h5py.File(self.fname,"r+")
         empty_images = 0
 
-        for idx in range(start_idx, end_idx):
+        for idx in np.arange(start_idx, end_idx):
+
             # retrieve calibrated image
-            evt = self.psi.runner.event(self.psi.times[self.psi.counter])
+            evt = self.psi.runner.event(self.psi.times[idx])
             self.psi.get_timestamp(evt.get(EventId))
             img = self.psi.det.calib(evt=evt)
             if img is None:
@@ -331,9 +332,11 @@ class PeakFinder:
                     self.powder_misses = img
                 else:
                     self.powder_misses = np.maximum(self.powder_misses, img)
-                
-            self.psi.counter+=1
             
+            self.psi.counter+=1
+            if self.psi.counter == self.psi.max_events:
+                break
+
         outh5.close()
         self.comm.Barrier()
 
@@ -347,14 +350,14 @@ class PeakFinder:
         # grab summary stats
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
-        n_events_total = self.comm.reduce(self.n_events, MPI.SUM)
+        n_events_per_rank = self.comm.gather(self.n_events, root=0)
         
         if self.rank == 0:
             # write summary file
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
-                f.write(f"Number of events processed: {n_events_total}\n")
+                f.write(f"Number of events processed: {n_events_per_rank[-1]}\n")
                 f.write(f"Number of hits found: {self.n_hits_total}\n")
-                f.write(f"Hit rate (%): {self.n_hits_total/n_events_total:.2f}\n")
+                f.write(f"Hit rate (%): {(self.n_hits_total/n_events_per_rank[-1]):.2f}\n")
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
 
             # generate virtual dataset and list for
