@@ -19,12 +19,11 @@ sbatch << EOF
 #SBATCH --job-name pull_repos
 #SBATCH --ntasks=1
 
-#repo_list='btx mrxv'
-#echo "[SLURM]Attempting to update the following repositories: ${repo_list}" > ${LOGFILE}
+ssh pslogin
 
 cd $SCRIPT_DIR
 cd ../
-echo "[SLURM]Moved to where the repositories are expected to be: $PWD" >> ${LOGFILE}
+echo "[SLURM]Moved to where the repositories are expected to be: $PWD" > ${LOGFILE}
 
 if [ -d ../btx ]; then
   cd ../btx
