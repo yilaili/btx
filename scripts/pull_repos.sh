@@ -30,15 +30,15 @@ repo_list_success=""
 for repo in ${repo_list}; do
   if [ -d ../${repo} ]; then
     cd ../${repo}
-    echo "> Updating ${repo}" >> ${LOGFILE}
-    echo "git pull origin main" >> ${LOGFILE}
+    echo "[SLURM]> Updating ${repo}" >> ${LOGFILE}
+    echo "[SLURM]git pull origin main" >> ${LOGFILE}
     git pull origin main 2>&1 ${LOGFILE}
     repo_list_success=${repo_list_success}" ${repo} "
   else
-    echo "Warning! ${repo} could not be updated." >> ${LOGFILE}
+    echo "[SLURM]Warning! ${repo} could not be updated." >> ${LOGFILE}
   fi
 done
-echo "List of repository pulled: ${repo_list_success}"
+echo "[SLURM]List of repository pulled: ${repo_list_success}" >> ${LOGFILE}
 #curl -s -XPOST ${JID_UPDATE_COUNTERS} -H "Content-Type: application/json" -d '[ {"key": "<b>List of repository pulled</b>", "value": "'"${repo_list_success}"'" } ]'
 EOF
 
