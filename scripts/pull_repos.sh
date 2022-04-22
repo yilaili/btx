@@ -26,18 +26,18 @@ sbatch << EOF
 #SBATCH --job-name pull_repos
 #SBATCH --ntasks=1
 
-#repo_list_success=""
-#for repo in ${repo_list}; do
-#  if [ -d ../${repo} ]; then
-#    cd ../${repo}
-#    echo "> Updating ${repo}" >> ${SCRIPT_DIR}/tmp.log
-#    echo "git pull origin main" >> ${SCRIPT_DIR}/tmp.log
-#    git pull origin main
-#    repo_list_success=${repo_list_success}" ${repo} "
-#  else
-#    echo "Warning! ${repo} could not be updated." >> ${SCRIPT_DIR}/tmp.log
-#  fi
-#done
+repo_list_success=""
+for repo in ${repo_list}; do
+  if [ -d ../${repo} ]; then
+    cd ../${repo}
+    echo "> Updating ${repo}" >> ${SCRIPT_DIR}/tmp.log
+    echo "git pull origin main" >> ${SCRIPT_DIR}/tmp.log
+    git pull origin main
+    repo_list_success=${repo_list_success}" ${repo} "
+  else
+    echo "Warning! ${repo} could not be updated." >> ${SCRIPT_DIR}/tmp.log
+  fi
+done
 #curl -s -XPOST ${JID_UPDATE_COUNTERS} -H "Content-Type: application/json" -d '[ {"key": "<b>List of repository pulled</b>", "value": "'"${repo_list_success}"'" } ]'
 EOF
 
