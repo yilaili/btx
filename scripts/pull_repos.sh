@@ -12,10 +12,10 @@ echo "Attempting to update the following repositories: ${repo_list}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $SCRIPT_DIR
 cd ../
-echo "Moved to where the repositories are expected to be: $PWD"
+echo "Moved to where the repositories are expected to be: $PWD" > ${SCRIPT_DIR}/tmp.log
 
 #Submit to SLURM
-sbatch << EOF
+sbatch <<EOF
 #!/bin/bash
 
 #SBATCH -p psanaq
@@ -28,12 +28,12 @@ repo_list_success=""
 for repo in ${repo_list}; do
   if [ -d ../${repo} ]; then
     cd ../${repo}
-    echo "> Updating ${repo}"
-    echo "git pull origin main"
+    echo "> Updating ${repo}" >> ${SCRIPT_DIR}/tmp.log
+    echo "git pull origin main" >> ${SCRIPT_DIR}/tmp.log
     git pull origin main
     repo_list_success=${repo_list_success}" ${repo} "
   else
-    echo "Warning! ${repo} could not be updated."
+    echo "Warning! ${repo} could not be updated." >> ${SCRIPT_DIR}/tmp.log
   fi
 done
 
