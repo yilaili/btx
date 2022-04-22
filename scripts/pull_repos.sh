@@ -20,11 +20,11 @@ sbatch << EOF
 #SBATCH --ntasks=1
 
 repo_list='btx mrxv'
-echo "[SLURM]Attempting to update the following repositories: ${repo_list}" >> ${LOGFILE}
+echo "[SLURM]Attempting to update the following repositories: ${repo_list}" > ${LOGFILE}
 
 cd $SCRIPT_DIR
 cd ../
-echo "[SLURM]Moved to where the repositories are expected to be: $PWD" > ${LOGFILE}
+echo "[SLURM]Moved to where the repositories are expected to be: $PWD" >> ${LOGFILE}
 
 repo_list_success=""
 for repo in ${repo_list}; do
