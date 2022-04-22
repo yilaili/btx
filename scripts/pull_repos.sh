@@ -14,6 +14,10 @@ cd $SCRIPT_DIR
 cd ../
 echo "Moved to where the repositories are expected to be: $PWD"
 
+#Submit to SLURM
+sbatch << EOF
+#!/bin/bash
+
 repo_list_success=""
 for repo in $repo_list; do
   if [ -d ../${repo} ]; then
@@ -24,5 +28,8 @@ for repo in $repo_list; do
     repo_list_success=${repo_list_success}" $repo "
   else
     echo "Warning! $repo could not be updated."
+  fi
+done
 
 curl -s -XPOST ${JID_UPDATE_COUNTERS} -H "Content-Type: application/json" -d '[ {"key": "<b>List of repository pulled</b>", "value": "'"${repo_list_success}"'" } ]'
+EOF
