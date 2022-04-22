@@ -25,15 +25,15 @@ sbatch << EOF
 #SBATCH --ntasks=1
 
 repo_list_success=""
-for repo in $repo_list; do
+for repo in ${repo_list}; do
   if [ -d ../${repo} ]; then
     cd ../${repo}
-    echo "> Updating $repo"
+    echo "> Updating ${repo}"
     echo "git pull origin main"
     git pull origin main
-    repo_list_success=${repo_list_success}" $repo "
+    repo_list_success=${repo_list_success}" ${repo} "
   else
-    echo "Warning! $repo could not be updated."
+    echo "Warning! ${repo} could not be updated."
   fi
 done
 
