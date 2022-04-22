@@ -23,7 +23,7 @@ sbatch << EOF
 #SBATCH --job-name pull_repos
 #SBATCH --ntasks=1
 
-repo_list='btx mrxv omdevteam.github.io'
+repo_list='btx mrxv'
 echo "[SLURM]Attempting to update the following repositories: ${repo_list}" >> ${LOGFILE}
 
 repo_list_success=""
