@@ -6,9 +6,6 @@
 #    L mrxv
 #    L omdevteam.github.io
 
-repo_list="btx mrxv omdevteam.github.io"
-echo "Attempting to update the following repositories: ${repo_list}"
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $SCRIPT_DIR
 cd ../
@@ -25,6 +22,9 @@ sbatch << EOF
 #SBATCH --exclusive
 #SBATCH --job-name pull_repos
 #SBATCH --ntasks=1
+
+repo_list="btx mrxv omdevteam.github.io"
+echo "Attempting to update the following repositories: ${repo_list}" >> ${LOGFILE}
 
 repo_list_success=""
 for repo in ${repo_list}; do
