@@ -18,6 +18,12 @@ echo "Moved to where the repositories are expected to be: $PWD"
 sbatch << EOF
 #!/bin/bash
 
+#SBATCH -p psanaq
+#SBATCH -t 10:00:00
+#SBATCH --exclusive
+#SBATCH --job-name pull_repos
+#SBATCH --ntasks=1
+
 repo_list_success=""
 for repo in $repo_list; do
   if [ -d ../${repo} ]; then
