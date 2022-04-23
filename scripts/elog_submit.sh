@@ -77,6 +77,8 @@ sbatch << EOF
 #SBATCH --ntasks=${CORES}
 
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
+conda env list | grep '*'
+which mpirun
 export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
