@@ -19,3 +19,15 @@ find_peaks:
   r0: 3.0
   dr: 2.0
   nsigm: 7.0
+
+index:
+  tag: ''
+  geom: '/cds/data/psdm/cxi/cxip21119/scratch/btx/index/r0046/r0046.geom'
+  int_radius: '4,5,6'
+  methods: 'mosflm'
+  cell: '/cds/data/psdm/cxi/cxip21119/scratch/btx/index/r0046/lox-stricter.cell'
+  tolerance: '5,5,5,1.5'
+  no_revalidate: True
+  multi: True
+  profile: True
+

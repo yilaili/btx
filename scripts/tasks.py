@@ -2,10 +2,6 @@ import logging
 import os
 import requests
 
-from btx.diagnostics.run import RunDiagnostics
-from btx.diagnostics.geom_opt import GeomOpt
-from btx.processing.peak_finder import PeakFinder
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -17,6 +13,7 @@ def test(config):
     requests.post(update_url, json=[config])
 
 def make_powder(config):
+    from btx.diagnostics.run import RunDiagnostics
     setup = config.setup
     task = config.make_powder
     """ Generate the max, avg, and std powders for a given run. """
@@ -32,6 +29,7 @@ def make_powder(config):
     logger.debug('Done!')
     
 def opt_distance(config):
+    from btx.diagnostics.geom_opt import GeomOpt
     setup = config.setup
     task = config.opt_distance
     """ Optimize the detector distance from an AgBehenate run. """
@@ -47,6 +45,7 @@ def opt_distance(config):
     logger.debug('Done!')
 
 def find_peaks(config):
+    from btx.processing.peak_finder import PeakFinder
     setup = config.setup
     task = config.find_peaks
     """ Perform adaptive peak finding on run. """
@@ -62,3 +61,16 @@ def find_peaks(config):
     pf.summarize() 
     logger.info(f'Saving CXI files and summary to {taskdir}/r{setup.run:04}')
     logger.debug('Done!')
+
+def index(config):
+    from btx.processing.indexer import Indexer
+    setup = config.setup
+    task = config.find_peaks
+    """ Index run using indexamajig. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, taskdir=taskdir, geom=config.index.geom,
+                          cell=config.index.cell, int_rad=config.index.int_radius, methods=config.index.methods, tolerance=config.index.tolerance, 
+                          no_revalidate=config.index.no_revalidate, multi=config.index.multi, profile=config.index.profile)
+    logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
+    indexer_obj.write_exe()
+    logger.info(f'Executable written to {indexer_obj.tmp_exe}')
