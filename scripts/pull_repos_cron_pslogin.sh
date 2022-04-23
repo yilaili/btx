@@ -10,7 +10,7 @@ for repo in btx mrxv omdevteam.github.io ; do
   repo_path=../${repo}
   if [ -d $repo_path ]; then
     cd $repo_path
-    git pull origin main
+    git pull
   else
     echo "Warning! ${repo} could not be updated."
   fi
