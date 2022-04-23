@@ -97,5 +97,4 @@ if __name__ == '__main__':
     indexer_obj = Indexer(exp=params.exp, run=params.run, det_type=params.det_type, taskdir=params.taskdir, geom=params.geom, 
                           cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, 
                           no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile)
-    #if indexer_obj.rank == 0:
     indexer_obj.write_exe()
