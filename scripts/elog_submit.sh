@@ -50,11 +50,6 @@ do
       shift
       shift
       ;;
-    -e|--experiment)
-      EXPERIMENT="$2"
-      shift
-      shift
-      ;;
     *)
       POSITIONAL+=("$1")
       shift
@@ -85,7 +80,7 @@ source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
 export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
 export NCORES=${CORES}
-export TMP_EXE="/cds/data/psdm/${EXPERIMENT:0:3}/${EXPERIMENT}/scratch/btx/task.sh"
+export TMP_EXE="${SCRIPT_DIR}/task.sh"
 
 echo "$MAIN_PY -c $CONFIGFILE -t $TASK" 
 $MAIN_PY -c $CONFIGFILE -t $TASK
