@@ -78,7 +78,7 @@ sbatch << EOF
 
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
 export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
-export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
+export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE="${SCRIPT_DIR}/task.sh"
 
