@@ -8,6 +8,7 @@ echo "# Date: `date` | User: `whoami` | Location: $PWD"
 
 for repo in btx mrxv omdevteam.github.io ; do
   repo_path=../${repo}
+  echo "# ... pulling to $PWD"
   if [ -d $repo_path ]; then
     cd $repo_path
     git pull
