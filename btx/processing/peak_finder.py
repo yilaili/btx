@@ -2,6 +2,7 @@ import numpy as np
 import argparse
 import h5py
 import os
+import requests
 from mpi4py import MPI
 from btx.interfaces.psana_interface import *
 from psalgos.pypsalgos import PyAlgos
@@ -14,7 +15,7 @@ class PeakFinder:
     https://confluence.slac.stanford.edu/display/PSDM/Hit+and+Peak+Finding+Algorithms
     """
     
-    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, dist=None,
+    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, det_dist=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., 
                  atot_thr=120.,  son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
         
@@ -36,7 +37,7 @@ class PeakFinder:
         self.nsigm = nsigm # intensity threshold to include pixel in connected group, float
         self.min_peaks = min_peaks # int, min number of peaks per image
         self.max_peaks = max_peaks # int, max number of peaks per image
-        self.dist = dist # float, distance to detector in mm, or str for a pv code
+        self.dist = det_dist # float, distance to detector in mm, or str for a pv code
         self.outdir = outdir # str, path for saving cxi files
 
         # set up class
@@ -77,6 +78,7 @@ class PeakFinder:
             if type(self.dist) == str: # override default detector / PV
                 pv = self.dist
             self.dist = self.psi.ds.env().epicsStore().value(pv)
+            print(f"PV used to retrieve detector distance: {pv}")
 
     def _generate_mask(self, mask_file=None, psana_mask=True):
         """
@@ -350,14 +352,14 @@ class PeakFinder:
         # grab summary stats
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
-        n_events_per_rank = self.comm.gather(self.n_events, root=0)
+        self.n_events_per_rank = self.comm.gather(self.n_events, root=0)
         
         if self.rank == 0:
             # write summary file
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
-                f.write(f"Number of events processed: {n_events_per_rank[-1]}\n")
+                f.write(f"Number of events processed: {self.n_events_per_rank[-1]}\n")
                 f.write(f"Number of hits found: {self.n_hits_total}\n")
-                f.write(f"Hit rate (%): {(self.n_hits_total/n_events_per_rank[-1]):.2f}\n")
+                f.write(f"Hit rate (%): {(self.n_hits_total/self.n_events_per_rank[-1]):.2f}\n")
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
 
             # generate virtual dataset and list for
@@ -365,7 +367,20 @@ class PeakFinder:
             self.generate_vds(vfname)
             with open(os.path.join(self.outdir, f'r{self.psi.run:04}{self.tag}.lst'), 'w') as f:
                 f.write(f"{vfname}\n")
-        
+
+    def report(self, update_url):
+        """
+        Post summary to elog.
+
+        Parameters
+        ----------
+        update_url : str
+            elog URL for posting progress update
+        """
+        requests.post(update_url, json=[ { "key": "Number of events processed", "value": f"{self.n_events_per_rank[-1]}" },
+                                         { "key": "Number of hits found", "value": f"{self.n_hits_total}"},
+                                         { "key": "Hit rate (%)", "value": f"{(self.n_hits_total/self.n_events_per_rank[-1]):.2f}"}, ])
+
     def add_virtual_dataset(self, vfname, fnames, dname, shape, dtype, mode='a'):
         """
         Add a virtual dataset to the hdf5 file.
