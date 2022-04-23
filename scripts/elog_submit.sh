@@ -50,6 +50,11 @@ do
       shift
       shift
       ;;
+    -e|--experiment)
+      EXPERIMENT="$2"
+      shift
+      shift
+      ;;
     *)
       POSITIONAL+=("$1")
       shift
@@ -62,6 +67,9 @@ QUEUE=${QUEUE:='psanaq'}
 CORES=${CORES:=1}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
+if [ ${CORES} -gt 1 ]; then
+MAIN_PY="mpirun ${MAIN_PY}"
+fi
 
 #Submit to SLURM
 sbatch << EOF
@@ -74,10 +82,14 @@ sbatch << EOF
 #SBATCH --ntasks=${CORES}
 
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
+export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
+export NCORES=${CORES}
+export TMP_EXE="/cds/data/psdm/${EXPERIMENT:0:3}/${EXPERIMENT}/scratch/btx/task.sh"
 
-echo "$MAIN_PY -c $CONFIGFILE -t $TASK"
+echo "$MAIN_PY -c $CONFIGFILE -t $TASK" 
 $MAIN_PY -c $CONFIGFILE -t $TASK
+if [ -f ${TMP_EXE} ]; then chmod +x ${TMP_EXE}; . ${TMP_EXE}; rm -f ${TMP_EXE}; fi
 EOF
 
 echo "Job sent to queue"
