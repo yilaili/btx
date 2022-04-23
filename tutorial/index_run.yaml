@@ -1,5 +1,5 @@
 setup:
-  root_dir: '/cds/data/psdm/cxi/cxip21119/scratch/btx/'
+  root_dir: '/cds/data/psdm/cxi/cxip21119/scratch/btx2/'
   exp: 'cxip21119'
   run: 46
   det_type: 'jungfrau4M'
