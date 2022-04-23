@@ -63,7 +63,7 @@ CORES=${CORES:=1}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
 if [ ${CORES} -gt 1 ]; then
-MAIN_PY="mpirun ${MAIN_PY}"
+MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/mpirun ${MAIN_PY}"
 fi
 
 #Submit to SLURM
