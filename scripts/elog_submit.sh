@@ -67,6 +67,9 @@ QUEUE=${QUEUE:='psanaq'}
 CORES=${CORES:=1}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
+if [ ${CORES} -gt 1 ]; then
+MAIN_PY="mpirun ${MAIN_PY}"
+fi
 
 #Submit to SLURM
 sbatch << EOF
@@ -84,9 +87,6 @@ export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE="/cds/data/psdm/${EXPERIMENT:0:3}/${EXPERIMENT}/scratch/btx/task.sh"
 
-if [ ${CORES} -gt 1 ]; then
-MAIN_PY="mpirun ${MAIN_PY}"
-fi
 echo "$MAIN_PY -c $CONFIGFILE -t $TASK" 
 $MAIN_PY -c $CONFIGFILE -t $TASK
 if [ -f ${TMP_EXE} ]; then chmod +x ${TMP_EXE}; . ${TMP_EXE}; rm -f ${TMP_EXE}; fi
