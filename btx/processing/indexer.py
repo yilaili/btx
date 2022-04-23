@@ -24,8 +24,21 @@ class Indexer:
         self.multi = multi # bool, enable multi-lattice indexing
         self.profile = profile # bool, display timing data
         self._retrieve_paths(taskdir)
+        self._parallel_logic()
+
+    def _parallel_logic(self):
+        """
+        Retrieve number of processors to run indexamajig on. If running in 
+        parallel, import mpi4py to ensure only first rank writes outfile.
+        """
         self.nproc = os.environ['NCORES']
-  
+        if int(self.nproc) > 1:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            self.rank = comm.Get_rank()
+        else:
+            self.rank = 0
+
     def _retrieve_paths(self, taskdir):
         """
         Retrieve the paths for the input .lst and output .stream file 
@@ -46,16 +59,17 @@ class Indexer:
     def write_exe(self):
         """
         Write an indexing executable for submission to slurm.
-        """        
-        command=f"indexamajig -i {self.lst} -o {self.stream} -j {self.nproc} -g {self.geom} --peaks=cxi --int-rad={self.rad} --indexing={self.methods} --pdb={self.cell} --tolerance={self.tolerance}"
-        if self.no_revalidate: command += ' --no-revalidate'
-        if self.multi: command += ' --multi'
-        if self.profile: command += ' --profile'
+        """     
+        if self.rank == 0:
+            command=f"indexamajig -i {self.lst} -o {self.stream} -j {self.nproc} -g {self.geom} --peaks=cxi --int-rad={self.rad} --indexing={self.methods} --pdb={self.cell} --tolerance={self.tolerance}"
+            if self.no_revalidate: command += ' --no-revalidate'
+            if self.multi: command += ' --multi'
+            if self.profile: command += ' --profile'
 
-        with open(self.tmp_exe, 'w') as f:
-            f.write("#!/bin/bash\n")
-            f.write(f"{command}\n")
-        print(f"Indexing executable written to {self.tmp_exe}")
+            with open(self.tmp_exe, 'w') as f:
+                f.write("#!/bin/bash\n")
+                f.write(f"{command}\n")
+            print(f"Indexing executable written to {self.tmp_exe}")
 
 def parse_input():
     """
@@ -83,4 +97,5 @@ if __name__ == '__main__':
     indexer_obj = Indexer(exp=params.exp, run=params.run, det_type=params.det_type, taskdir=params.taskdir, geom=params.geom, 
                           cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, 
                           no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile)
+    #if indexer_obj.rank == 0:
     indexer_obj.write_exe()
