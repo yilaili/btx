@@ -62,6 +62,9 @@ QUEUE=${QUEUE:='psanaq'}
 CORES=${CORES:=1}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
+if [ ${CORES} -gt 1 ]; then
+MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/mpirun ${MAIN_PY}"
+fi
 
 #Submit to SLURM
 sbatch << EOF
@@ -74,10 +77,16 @@ sbatch << EOF
 #SBATCH --ntasks=${CORES}
 
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
-export PYTHONPATH="${PYTHONPATH}:$( dirname -- $SCRIPT_DIR})"
+conda env list | grep '*'
+which mpirun
+export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
+export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
+export NCORES=${CORES}
+export TMP_EXE="${SCRIPT_DIR}/task.sh"
 
-echo "$MAIN_PY -c $CONFIGFILE -t $TASK"
+echo "$MAIN_PY -c $CONFIGFILE -t $TASK" 
 $MAIN_PY -c $CONFIGFILE -t $TASK
+if [ -f ${TMP_EXE} ]; then chmod +x ${TMP_EXE}; . ${TMP_EXE}; rm -f ${TMP_EXE}; fi
 EOF
 
 echo "Job sent to queue"
