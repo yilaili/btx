@@ -47,12 +47,12 @@ done
 set -- "${POSITIONAL[@]}"
 
 # Hard fail if experiment and detector are not provided
-if [ -z ${EXPT+x}]; then
+if [ -z ${EXPT+x} ]; then
   echo "ERROR! experiment name not provided!"
   usage
   exit
 fi
-if [ -z ${DETECTOR+x}]; then
+if [ -z ${DETECTOR+x} ]; then
   echo "ERROR! detector name not provided!"
   usage
   exit
@@ -90,7 +90,7 @@ done
 # 2. Retrieve latests mask and geometry
 for item in masks geometries; do
   file_path="${AUTOSFX_DIR}/mrxv/${item}/${DETECTOR}_latest.h5"
-  if [ ! -f $file_path]; then
+  if [ ! -f $file_path ]; then
     echo "WARNING! no ${item} found at: ${file_path}"
   fi
   cp ${file_path} ${$WORKSPACE_DIR}/
@@ -115,7 +115,7 @@ elif [ ${HUTCH} == "mfx" ]; then
   TEMPLATE_EXPT="mfxlx4219"
   TEMPLATE_DETECTOR="epix10k2M"
   TEMPLATE_DETECTOR_PV="MFX:DET:MMS:04.RBV"
-  if [ ${DETECTOR} == 'epix10k2M']; then
+  if [ ${DETECTOR} == 'epix10k2M' ]; then
     DETECTOR_PV="MFX:ROB:CONT:POS:Z"
   else
     DETECTOR_PV=${TEMPLATE_DETECTOR_PV}
