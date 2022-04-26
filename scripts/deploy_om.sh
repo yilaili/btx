@@ -46,6 +46,18 @@ do
 done
 set -- "${POSITIONAL[@]}"
 
+# Hard fail if experiment and detector are not provided
+if [ -z ${EXPT+x}]; then
+  echo "ERROR! experiment name not provided!"
+  usage
+  exit
+fi
+if [ -z ${DETECTOR+x}]; then
+  echo "ERROR! detector name not provided!"
+  usage
+  exit
+fi
+
 AUTOSFX_DIR=${AUTOSFX_DIR:='/cds/sw/package/autosfx/'}
 
 # 0. Identify the operator
