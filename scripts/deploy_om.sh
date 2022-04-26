@@ -85,6 +85,7 @@ for file in run_om.sh monitor.yaml; do
     exit
   fi
   cp ${file_path} ${WORKSPACE_DIR}/
+  echo "INFO: copied ${file} to ${WORKSPACE_DIR}"
 done
 
 # 2. Retrieve latests mask and geometry
@@ -95,6 +96,7 @@ for item in masks geometries; do
     echo "WARNING! no ${item} found at: ${file_path}"
   fi
   cp ${file_path} ${$WORKSPACE_DIR}/
+  echo "INFO: copied ${file_path} to ${WORKSPACE_DIR}"
 done
 
 # 3. Edit run_om.sh
