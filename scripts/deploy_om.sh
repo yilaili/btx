@@ -91,7 +91,7 @@ done
 for item in masks geometries; do
   file_path="${AUTOSFX_DIR}/mrxv/${item}/${DETECTOR}_latest.*"
   echo $file_path
-  if [ ! -f $file_path ]; then
+  if [ ! -f ${file_path} ]; then
     echo "WARNING! no ${item} found at: ${file_path}"
   fi
   cp ${file_path} ${$WORKSPACE_DIR}/
