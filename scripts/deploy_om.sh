@@ -95,7 +95,7 @@ for item in masks geometries; do
   if [ ! -f ${file_path} ]; then
     echo "WARNING! no ${item} found at: ${file_path}"
   fi
-  cp ${file_path} ${$WORKSPACE_DIR}/
+  cp ${file_path} ${WORKSPACE_DIR}/
   echo "INFO: copied ${file_path} to ${WORKSPACE_DIR}"
 done
 
