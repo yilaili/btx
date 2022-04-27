@@ -1,7 +1,7 @@
 setup:
   root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
   exp: 'mfxlv4920'
-  run: 7
+  run: 30
   det_type: 'epix10k2M'
 
 find_peaks:
