@@ -1,0 +1,33 @@
+setup:
+  root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
+  exp: 'mfxlv4920'
+  run: 7
+  det_type: 'epix10k2M'
+
+find_peaks:
+  tag: ''
+  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/mrxv_mask.npy'
+  psana_mask: True
+  min_peaks: 2
+  max_peaks: 2048
+  npix_min: 1
+  npix_max: 30
+  amax_thr: 800.
+  atot_thr: 1000.
+  son_min: 10.0
+  peak_rank: 3
+  r0: 3.0
+  dr: 2.0
+  nsigm: 10.0
+
+index:
+  tag: ''
+  geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/r0004-end.geom'
+  int_radius: '4,5,6'
+  methods: 'mosflm'
+  cell: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/cco.cell'
+  tolerance: '5,5,5,1.5'
+  no_revalidate: True
+  multi: True
+  profile: True
+
