@@ -15,7 +15,7 @@ class PeakFinder:
     https://confluence.slac.stanford.edu/display/PSDM/Hit+and+Peak+Finding+Algorithms
     """
     
-    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, det_dist=None,
+    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, clen=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., 
                  atot_thr=120.,  son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
         
@@ -37,7 +37,7 @@ class PeakFinder:
         self.nsigm = nsigm # intensity threshold to include pixel in connected group, float
         self.min_peaks = min_peaks # int, min number of peaks per image
         self.max_peaks = max_peaks # int, max number of peaks per image
-        self.dist = det_dist # float, distance to detector in mm, or str for a pv code
+        self.clen = clen # float, clen distance in mm, or str for a pv code
         self.outdir = outdir # str, path for saving cxi files
 
         # set up class
@@ -67,18 +67,10 @@ class PeakFinder:
         self.iY = self.psi.det.indexes_y(self.psi.run).astype(np.int64)
         self.ipx, self.ipy = self.psi.det.point_indexes(self.psi.run, pxy_um=(0, 0))
 
-        # retrieve psana-estimated distance if None or a PV code is supplied
-        if type(self.dist) != float:
-            if self.psi.det_type == 'jungfrau4M':
-                pv = 'CXI:DS1:MMS:06.RBV'
-            if self.psi.det_type == 'Rayonix':
-                pv = 'MFX:DET:MMS:04.RBV'
-            if self.psi.det_type == 'epix10k2M':
-                pv = 'MFX:ROB:CONT:POS:Z'
-            if type(self.dist) == str: # override default detector / PV
-                pv = self.dist
-            self.dist = self.psi.ds.env().epicsStore().value(pv)
-            print(f"PV used to retrieve detector distance: {pv}")
+        # retrieve clen from psana if None or a PV code is supplied
+        if type(self.clen) != float:
+            self.clen = self.psi.get_clen(pv=self.clen)
+            print(f"Value of clen parameter is: {self.clen} mm")
 
     def _generate_mask(self, mask_file=None, psana_mask=True):
         """
@@ -239,8 +231,8 @@ class PeakFinder:
                     'cmin', 'cmax', 'peakTotalIntensity', 'peakMaxIntensity', 'peakRadius']:
             outh5[f'/entry_1/result_1/{key}'].resize((self.n_hits, self.max_peaks))
             
-        # add distance, then crop the LCLS keys
-        outh5['/LCLS/detector_1/EncoderValue'][:] = self.dist
+        # add clen distance, then crop the LCLS keys
+        outh5['/LCLS/detector_1/EncoderValue'][:] = self.clen
         for key in ['eventNumber', 'machineTime', 'machineTimeNanoSeconds', 'fiducial', 'detector_1/EncoderValue', 'photon_energy_eV']:
             outh5[f'/LCLS/{key}'].resize((self.n_hits,))
 
