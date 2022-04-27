@@ -106,6 +106,31 @@ class PsanaInterface:
         """
         return -1*np.mean(self.det.coords_z(self.run))/1e3
 
+    def get_clen(self, pv=None):
+        """
+        Retrieve the clength in mm.
+
+        Parameters
+        ----------
+        pv : str
+            pv code for distance, optional
+
+        Returns
+        -------
+        clen : float
+            clen, where clen = distance - coffset
+        """
+        if pv is None:
+            if self.det_type == 'jungfrau4M':
+                pv = 'CXI:DS1:MMS:06.RBV'
+            if self.det_type == 'Rayonix':
+                pv = 'MFX:DET:MMS:04.RBV'
+            if self.det_type == 'epix10k2M':
+                pv = 'MFX:ROB:CONT:POS:Z'
+            print(f"PV used to retrieve clen parameter: {pv}")
+
+        return self.ds.env().epicsStore().value(pv)
+
     def get_timestamp(self, evtId):
         """
         Retrieve the timestamp (seconds, nanoseconds, fiducials) associated with the input 
