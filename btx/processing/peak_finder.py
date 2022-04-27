@@ -351,7 +351,7 @@ class PeakFinder:
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
                 f.write(f"Number of events processed: {self.n_events_per_rank[-1]}\n")
                 f.write(f"Number of hits found: {self.n_hits_total}\n")
-                f.write(f"Hit rate (%): {(self.n_hits_total/self.n_events_per_rank[-1]):.2f}\n")
+                f.write(f"Fractional hit rate: {(self.n_hits_total/self.n_events_per_rank[-1]):.2f}\n")
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
 
             # generate virtual dataset and list for
