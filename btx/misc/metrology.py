@@ -80,7 +80,7 @@ def generate_geom_file(exp, run, det_type, input_file, output_file, det_dist=Non
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     if det_dist is None:
         det_dist = psi.estimate_distance()
-    coffset = (det_dist - psi.get_clen()) / 1000.
+    coffset = (det_dist - psi.get_camera_length()) / 1000.
     
     geom.to_crystfel_file(output_file, coffset=coffset)
     

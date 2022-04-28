@@ -15,9 +15,9 @@ class PeakFinder:
     https://confluence.slac.stanford.edu/display/PSDM/Hit+and+Peak+Finding+Algorithms
     """
     
-    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, clen=None,
-                 min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., 
-                 atot_thr=120.,  son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
+    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, camera_length=None,
+                 min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
+                 son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
         
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -37,7 +37,7 @@ class PeakFinder:
         self.nsigm = nsigm # intensity threshold to include pixel in connected group, float
         self.min_peaks = min_peaks # int, min number of peaks per image
         self.max_peaks = max_peaks # int, max number of peaks per image
-        self.clen = clen # float, clen distance in mm, or str for a pv code
+        self.clen = camera_length # float, clen distance in mm, or str for a pv code
         self.outdir = outdir # str, path for saving cxi files
 
         # set up class
@@ -69,7 +69,7 @@ class PeakFinder:
 
         # retrieve clen from psana if None or a PV code is supplied
         if type(self.clen) != float:
-            self.clen = self.psi.get_clen(pv=self.clen)
+            self.clen = self.psi.get_camera_length(pv=self.clen)
             print(f"Value of clen parameter is: {self.clen} mm")
 
     def _generate_mask(self, mask_file=None, psana_mask=True):

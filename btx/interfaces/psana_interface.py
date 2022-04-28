@@ -106,9 +106,9 @@ class PsanaInterface:
         """
         return -1*np.mean(self.det.coords_z(self.run))/1e3
 
-    def get_clen(self, pv=None):
+    def get_camera_length(self, pv=None):
         """
-        Retrieve the clength in mm.
+        Retrieve the camera length (clen) in mm.
 
         Parameters
         ----------
