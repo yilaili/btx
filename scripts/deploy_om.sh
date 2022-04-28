@@ -13,6 +13,8 @@ $(basename "$0"):
       Experiment to deploy OM for
     -d|--detector
       Detector to be used
+    -v|--development
+      Use OM's development version    
     -a|--autosfx-directory
       Path to AutoSFX directory (optional)
 EOF
@@ -37,6 +39,10 @@ do
       shift
       shift
       ;;
+    -v|--development)
+      DEV_PATH="dev"
+      shift
+      ;;
     -a|--autosfx-directory)
       AUTOSFX_DIR="$2"
       shift
@@ -59,6 +65,7 @@ if [ -z ${DETECTOR+x} ]; then
 fi
 
 AUTOSFX_DIR=${AUTOSFX_DIR:='/cds/sw/package/autosfx/'}
+DEV_PATH=${DEV_PATH:=''}
 
 # 0. Identify the operator
 OPR=`whoami`
@@ -78,8 +85,8 @@ else
   echo "INFO: created ${WORKSPACE_DIR}"
 fi
 
-for file in run_om.sh monitor.yaml; do
-  file_path="${AUTOSFX_DIR}/omdevteam.github.io/html/files/lcls/${HUTCH}/${file}"
+for file in run_om.sh run_gui.sh run_frame_viewer.sh run_parameter_tweaker.sh monitor.yaml; do
+  file_path="${AUTOSFX_DIR}/omdevteam.github.io/html/files/lcls/${HUTCH}/${DEV_PATH}/${file}"
   if [ ! -f ${file_path} ]; then
     echo "ERROR: could not find ${file_path}. Abort..."
     exit
@@ -101,22 +108,32 @@ done
 # 3. Edit run_om.sh
 if [ ${HUTCH} == "cxi" ]; then
   TEMPLATE_MON_NODE_LIST="daq-cxi-mon01,daq-cxi-mon18,daq-cxi-mon19"
+  TEMPLATE_FIRST_MON_NODE="daq-cxi-mon01"
 elif [ ${HUTCH} == "mfx" ]; then
   TEMPLATE_MON_NODE_LIST="daq-mfx-mon02,daq-mfx-mon03,daq-mfx-mon04,daq-mfx-mon05"
+  TEMPLATE_FIRST_MON_NODE="daq-mfx-mon02"
 fi
 MON_NODE_LIST=`wherepsana`
+FIRST_MON_NODE=`echo $MON_NODE_LIST | cut -d',' -f1`
 sed -i "s/host ${TEMPLATE_MON_NODE_LIST}/host ${MON_NODE_LIST}/g" ${WORKSPACE_DIR}/run_om.sh
+sed -i "s/${TEMPLATE_FIRST_MON_NODE}/${FIRST_MON_NODE}/g" ${WORKSPACE_DIR}/run_gui.sh
+sed -i "s/${TEMPLATE_FIRST_MON_NODE}/${FIRST_MON_NODE}/g" ${WORKSPACE_DIR}/run_frame_viewer.sh
+sed -i "s/${TEMPLATE_FIRST_MON_NODE}/${FIRST_MON_NODE}/g" ${WORKSPACE_DIR}/run_parameter_tweaker.sh
+chmod +x ${WORKSPACE_DIR}/run_om.sh
+chmod +x ${WORKSPACE_DIR}/run_gui.sh
+chmod +x ${WORKSPACE_DIR}/run_frame_viewer.sh
+chmod +x ${WORKSPACE_DIR}/run_parameter_tweaker.sh
 
 # 4. Edit monitor.yaml
 if [ ${HUTCH} == "cxi" ]; then
   TEMPLATE_EXPT="cxilv4418"
   TEMPLATE_DETECTOR="jungfrau4M"
-  TEMPLATE_DETECTOR_PV="CXI:DS1:MMS:06.RBV"
+  TEMPLATE_DETECTOR_PV="detector_z"
   DETECTOR_PV=${TEMPLATE_DETECTOR_PV}
 elif [ ${HUTCH} == "mfx" ]; then
   TEMPLATE_EXPT="mfxlx4219"
   TEMPLATE_DETECTOR="epix10k2M"
-  TEMPLATE_DETECTOR_PV="MFX:DET:MMS:04.RBV"
+  TEMPLATE_DETECTOR_PV="detector_z"
   if [ ${DETECTOR} == 'epix10k2M' ]; then
     DETECTOR_PV="MFX:ROB:CONT:POS:Z"
   else
@@ -125,5 +142,5 @@ elif [ ${HUTCH} == "mfx" ]; then
 fi
 sed -i "s/${TEMPLATE_EXPT}/${EXPT}/g" ${WORKSPACE_DIR}/monitor.yaml
 sed -i "s/bad_pixel_map_filename: null/bad_pixel_map_filename: ${DETECTOR}_latest.h5/g" ${WORKSPACE_DIR}/monitor.yaml
-sed -i "s/${TEMPLATE_DETECTOR}/${DETECTOR}/g" ${WORKSPACE_DIR}/monitor.yaml
+sed -i "s/geometry_file: ${TEMPLATE_DETECTOR}/geometry_file: ${DETECTOR}_latest/g" ${WORKSPACE_DIR}/monitor.yaml
 sed -i "s/${TEMPLATE_DETECTOR_PV}/${DETECTOR_PV}/g" ${WORKSPACE_DIR}/monitor.yaml
