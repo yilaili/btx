@@ -65,6 +65,7 @@ MAIN_PY="${SCRIPT_DIR}/main.py"
 if [ ${CORES} -gt 1 ]; then
 MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/mpirun ${MAIN_PY}"
 fi
+TMP_EXE="${SCRIPT_DIR}/task.sh" 
 
 #Submit to SLURM
 sbatch << EOF
@@ -82,7 +83,7 @@ which mpirun
 export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
-export TMP_EXE="${SCRIPT_DIR}/task.sh"
+export TMP_EXE=${TMP_EXE}
 
 echo "$MAIN_PY -c $CONFIGFILE -t $TASK" 
 $MAIN_PY -c $CONFIGFILE -t $TASK

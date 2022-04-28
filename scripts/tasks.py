@@ -60,7 +60,10 @@ def find_peaks(config):
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize() 
-    pf.report(update_url)
+    try:
+        pf.report(update_url)
+    except:
+        logger.debug("Could not communicate with the elog update url")
     logger.info(f'Saving CXI files and summary to {taskdir}/r{setup.run:04}')
     logger.debug('Done!')
 
