@@ -71,7 +71,7 @@ class RunDiagnostics:
             path to directory in which to save powders, optional
         """
         for key in self.powders_final.keys():
-            np.save(os.path.join(outdir, f"powder_{key}_r{self.psi.run}.npy"), self.powders_final[key])
+            np.save(os.path.join(outdir, f"powder_{key}_r{self.psi.run:04}.npy"), self.powders_final[key])
 
     def compute_stats(self, img):
         """
@@ -245,15 +245,3 @@ if __name__ == '__main__':
     rd.visualize_powder(output=os.path.join(params.outdir, f"powder_r{rd.psi.run:04}.png"))
     rd.visualize_stats(output=os.path.join(params.outdir, f"stats_r{rd.psi.run:04}.png"))
 
-#rd = RunDiagnostics(exp='mfxlv4920', run=4, det_type='epix10k2M')
-#print(f"Rank: {rd.rank}, max_events: {rd.psi.max_events}")
-#rd.compute_run_stats(max_events=203)
-#rd.visualize_powder(output="test_powder.png")
-#rd.visualize_stats(output='test_stats.png')
-#print(f"Rank: {rd.rank}, fiducials: {rd.psi.fiducials}")
-#if rd.rank == 0:
-    #print(np.concatenate(rd.stats_final['max']))
-#    print(rd.stats_final['fiducials'])
-#    for key in rd.stats_final.keys():
-        #np.save(f"test_{key}.npy", rd.stats_final[key])
-#        print(key, rd.stats_final[key])
