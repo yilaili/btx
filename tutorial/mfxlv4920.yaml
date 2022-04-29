@@ -1,8 +1,16 @@
 setup:
   root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
   exp: 'mfxlv4920'
-  run: 30
+  run: 4
   det_type: 'epix10k2M'
+
+make_powder:
+  max_events: -1
+  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/mrxv_mask.npy'
+
+opt_distance:
+  center: 834 832.5
+  input_geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/4-end.data'
 
 find_peaks:
   tag: ''
