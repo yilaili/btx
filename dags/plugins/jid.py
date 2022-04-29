@@ -164,6 +164,7 @@ class JIDSlurmOperator( BaseOperator ):
     LOG.info("Queueing slurm job...")
     control_doc = self.create_control_doc( context )
     LOG.info(control_doc)
+    LOG.info(self.locations[self.run_at] + self.endpoints['start_job'])
     msg = self.rpc( 'start_job', control_doc , context)
     LOG.info(f"jobid {msg['tool_id']} successfully submitted!")
     jobs = [ msg, ]
