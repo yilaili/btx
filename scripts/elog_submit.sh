@@ -64,6 +64,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
 if [ ${CORES} -gt 1 ]; then
 MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/mpirun ${MAIN_PY}"
+else
+MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python ${MAIN_PY}"
 fi
 TMP_EXE="${SCRIPT_DIR}/task.sh" 
 
@@ -80,6 +82,7 @@ sbatch << EOF
 source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
 conda env list | grep '*'
 which mpirun
+which python
 export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}

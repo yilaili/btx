@@ -1,221 +1,247 @@
 import numpy as np
+import argparse
 import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
 from matplotlib.colors import LogNorm
+
+from psana import EventId
 from btx.interfaces.psana_interface import *
+from mpi4py import MPI
 
 class RunDiagnostics:
+
+    """
+    Class for computing powders and a trajectory of statistics from a given run.
+    """
     
     def __init__(self, exp, run, det_type):
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type, track_timestamps=False)
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type, track_timestamps=True)
         self.pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(run))
-        self.n_proc = 0 # number of images processed
         self.powders = dict() 
-        self.run_stats = dict()
-        self.run = run # track for output plots nomenclature
+        self.stats = dict()
         
-    def compute_powders(self, images):
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size() 
+
+    def compute_base_powders(self, img):
         """
-        Compute powder patterns, storing the average, max, and standard deivation. 
+        Compute the base powders: max, sum, sum of squares.
 
         Parameters
         ----------
-        images : numpy.ndarray, 4d
-            unassembled, calibrated images of shape (n_images, n_panels, n_x, n_y)
+        img : numpy.ndarray, 3d
+            unassembled, calibrated images of shape (n_panels, n_x, n_y)
         """
-        max_images = np.max(images, axis=0)
-        sum_images = np.sum(images, axis=0)
-        sqr_images = np.sum(np.square(images), axis=0)
-
         if not self.powders:
-            for key,val in zip(['max','sum','sqr'],[max_images,sum_images,sqr_images]):
-                self.powders[key] = val
+            for key in ['sum', 'sqr', 'max']:
+                self.powders[key] = img
         else:
-            self.powders['sum'] += sum_images
-            self.powders['sqr'] += sqr_images
-            self.powders['max'] = np.max(np.concatenate((self.powders['max'][np.newaxis,:], max_images[np.newaxis,:])), axis=0)
-            
-        self.powders['avg'] = self.powders['sum'] / self.n_proc
-        self.powders['std'] = np.sqrt(self.powders['sqr'] / self.n_proc - np.square(self.powders['avg']))
+            self.powders['sum'] += img
+            self.powders['sqr'] += np.square(img)
+            self.powders['max'] = np.maximum(self.powders['max'], img)
 
-        return 
-        
-    def save_powders(self, output, assemble=True):
+    def finalize_powders(self):
         """
-        Store the powder patterns as individual numpy arrays to output.
-        
+        Finalize powders calculation at end of the run, computing the
+        max, avg, and std dev versions.
+        """
+        self.powders_final = dict()
+        powder_max = np.array(self.comm.gather(self.powders['max'], root=0))
+        powder_sum = np.array(self.comm.gather(self.powders['sum'], root=0))
+        powder_sqr = np.array(self.comm.gather(self.powders['sqr'], root=0))
+        total_n_proc = self.comm.reduce(self.n_proc, MPI.SUM)
+
+        if self.rank == 0:
+            self.powders_final['max'] = np.max(powder_max, axis=0)
+            self.powders_final['avg'] = powder_sum / float(total_n_proc)
+            self.powders_final['std'] = np.sqrt(powder_sqr / float(total_n_proc) - np.square(self.powders_final['avg']))
+            for key in self.powders_final.keys():
+                self.powders_final[key] = assemble_image_stack_batch(self.powders_final[key], self.pixel_index_map)
+
+    def save_powders(self, outdir):
+        """
+        Save powders to output directory.
+
         Parameters
         ----------
         output : str
-            path to output directory
-        assemble : bool
-            if True, store images in assembled detector format
+            path to directory in which to save powders, optional
         """
-        for key in ['max','avg','std']:
-            if assemble:
-                np.save(os.path.join(output, f"powder_{key}_r{self.run}.npy"), 
-                        assemble_image_stack_batch(self.powders[key], self.pixel_index_map))
-            else:
-                np.save(os.path.join(output, f"powder_{key}_r{self.run}.npy"), self.powders[key])
-        
-        return
-        
-    def compute_batch_stats(self, images, max_devs=None):
+        for key in self.powders_final.keys():
+            np.save(os.path.join(outdir, f"powder_{key}_r{self.psi.run:04}.npy"), self.powders_final[key])
+
+    def compute_stats(self, img):
         """
-        Compute statistics for a batch of images. Even when images are pre-calibrated,
-        some outliers may sneak through, so statistics are optionally computed after 
-        removing outliers (pixels that exceed max_devs std deviations above the mean).
+        Compute the following stats: mean, std deviation, max, min.
+
+        Parameters
+        ----------
+        img : numpy.ndarray, 3d
+            unassembled, calibrated images of shape (n_panels, n_x, n_y)
+        """
+        if not self.stats:
+            for key in ['mean','std','max','min']:
+                self.stats[key] = np.zeros(self.psi.max_events - self.psi.counter)
+        
+        self.stats['mean'][self.n_proc] = np.mean(img)
+        self.stats['std'][self.n_proc] = np.std(img)
+        self.stats['max'][self.n_proc] = np.max(img)
+        self.stats['min'][self.n_proc] = np.min(img)
+        
+    def finalize_stats(self, n_empty=0):
+        """
+        Gather stats from various ranks into single arrays in self.stats_final.
+
+        Parameters
+        ----------
+        n_empty : int
+            number of empty images in this rank
+        """
+        self.stats_final = dict()
+        for key in self.stats.keys():
+            if n_empty != 0:
+                self.stats_final[key] = self.stats[key][:-n_empty]
+            self.stats_final[key] = self.comm.gather(self.stats[key], root=0)
+
+        self.stats_final['fiducials'] = self.comm.gather(np.array(self.psi.fiducials), root=0)
+        if self.rank == 0:
+            for key in self.stats_final.keys():
+                #self.stats_final[key] = np.array(self.stats_final[key]).reshape(-1)
+                self.stats_final[key] = np.hstack(self.stats_final[key])
+
+    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False):
+        """
+        Compute powders and per-image statistics. If a mask is provided, it is 
+        only applied to the stats trajectories, not in computing the powder.
         
         Parameters
         ----------
-        images : numpy.ndarray, 4d
-            unassembled, calibrated images of shape (n_images, n_panels, n_x, n_y)
-        max_devs : float, default=50
-            number of standard deviations above mean to consider pixels outliers
-            if None, do not perform additional outlier rejection.
-        
-        Returns
-        -------
-        stats : dict
-            mean, standard deviation, median, max and min of each image
-            with and without an additional outlier removal step
-        """
-        tag = ''
-        if max_devs is not None:
-            means, stds = np.mean(images, axis=(1,2,3)), np.std(images, axis=(1,2,3))
-            images = np.where(np.abs(images - means[:,None,None,None]) < max_devs * stds[:,None,None,None], images, np.nan)
-            tag = '_sel'
-        
-        stats = dict()
-        stats['mean' + tag] = np.nanmean(images, axis=(1,2,3))
-        stats['std_dev' + tag] = np.nanstd(images, axis=(1,2,3))
-        stats['median' + tag] = np.nanmedian(images, axis=(1,2,3))
-        stats['max' + tag] = np.nanmax(images, axis=(1,2,3))
-        stats['min' + tag] = np.nanmin(images, axis=(1,2,3))
-        
-        return stats
-    
-    def wrangle_run_stats(self, batch_stats):
-        """
-        Store statistics from next batch of images.
-        
-        Parameters
-        ----------
-        batch_stats : dict
-            dictionary of statistics for a batch of images
-        """
-        for key in batch_stats.keys():
-            if key not in self.run_stats.keys():
-                self.run_stats[key] = list(batch_stats[key])
-            else:
-                self.run_stats[key].extend(list(batch_stats[key]))
-            
-        return
-        
-    def compute_run_stats(self, n_images=1e6, batch_size=100, max_devs=50, powder_only=False):
-        """
-        Compute per-image statistics (mean, median, max, min, std deviation),
-        with and without an additional step of outlier rejection.
-        
-        Parameters
-        ----------
-        n_images : int 
-            number of images from run to process
-        batch_size : int
-            number of images per batch
-        max_devs : float
-            threshold for outlier removal (number of std deviations above mean)
+        max_events : int
+            number of images to process; if -1, process entire run
+        mask : str or np.ndarray, shape (n_panels, n_x, n_y)
+            binary mask file or array in unassembled psana shape, optional 
         powder_only : bool
             if True, only compute the powder pattern
         """
-        if batch_size > n_images:
-            batch_size = n_images
-            
-        while self.n_proc < n_images:
+        if mask is not None:
+            if type(mask) == str:
+                mask = np.load(mask) 
+            assert mask.shape == self.psi.det.shape()
 
-            images = self.psi.get_images(batch_size, assemble=False)
-            self.n_proc += images.shape[0]
-            
-            self.compute_powders(images)
+        self.psi.distribute_events(self.rank, self.size, max_events=max_events)
+        start_idx, end_idx = self.psi.counter, self.psi.max_events
+        self.n_proc, n_empty = 0, 0 
+
+        for idx in np.arange(start_idx, end_idx):
+
+            # retrieve calibrated image
+            evt = self.psi.runner.event(self.psi.times[idx])
+            self.psi.get_timestamp(evt.get(EventId))
+            img = self.psi.det.calib(evt=evt)
+            if img is None:
+                n_empty += 1
+                continue
+
+            self.compute_base_powders(img)
             if not powder_only:
-                for threshold in [None, max_devs]:
-                    batch_stats = self.compute_batch_stats(images, max_devs=threshold)
-                    self.wrangle_run_stats(batch_stats)
+                if mask is not None:
+                    img = np.ma.masked_array(img, 1-mask)
+                self.compute_stats(img)
 
-            if images.shape[0] < batch_size: # reached end of the run
+            self.n_proc += 1
+            if self.psi.counter + n_empty == self.psi.max_events:
                 break
 
-        return
-        
-    def visualize_powder(self, tag='max', vmin=-1e5, vmax=1e5,
-                         output=None, figsize=12, dpi=300):
+        self.comm.Barrier()
+        self.finalize_powders()
+        if not powder_only:
+            self.finalize_stats(n_empty)
+            print(f"Rank {self.rank}, no. empty images: {n_empty}")
+
+    def visualize_powder(self, tag='max', vmin=-1e5, vmax=1e5, output=None, figsize=12, dpi=300):
         """
         Visualize the powder image: the distribution of intensities as a histogram
         and the positive and negative-valued pixels on the assembled detector image.
         """
-
-        image = assemble_image_stack_batch(self.powders[tag], self.pixel_index_map)
+        if self.rank == 0:
+            image = self.powders_final[tag]
         
-        fig = plt.figure(figsize=(figsize,figsize),dpi=dpi)
-        gs = fig.add_gridspec(2,2)
+            fig = plt.figure(figsize=(figsize,figsize),dpi=dpi)
+            gs = fig.add_gridspec(2,2)
 
-        irow=0
-        ax1 = fig.add_subplot(gs[irow,:2])
-        ax1.grid()
-        ax1.hist(image.flatten(), bins=100, log=True, color='black')
-        ax1.set_title(f'histogram of pixel intensities in powder {tag}',
-                     fontdict={'fontsize': 8})
+            irow=0
+            ax1 = fig.add_subplot(gs[irow,:2])
+            ax1.grid()
+            ax1.hist(image.flatten(), bins=100, log=True, color='black')
+            ax1.set_title(f'histogram of pixel intensities in powder {tag}', fontdict={'fontsize': 8})
 
-        irow+=1
-        ax2 = fig.add_subplot(gs[irow,0])
-        im = ax2.imshow(np.where(image>0,0,image),
-                        cmap=plt.cm.gist_gray,
-                        norm=colors.SymLogNorm(linthresh=1., linscale=1.,
-                                               vmin=vmin, vmax=0.))
-        ax2.axis('off')
-        ax2.set_title(f'negative intensity pixels',
-                     fontdict={'fontsize': 6})
-        plt.colorbar(im)
+            irow+=1
+            ax2 = fig.add_subplot(gs[irow,0])
+            im = ax2.imshow(np.where(image>0,0,image), cmap=plt.cm.gist_gray, 
+                            norm=colors.SymLogNorm(linthresh=1., linscale=1., vmin=vmin, vmax=0.))
+            ax2.axis('off')
+            ax2.set_title(f'negative intensity pixels', fontdict={'fontsize': 6})
+            plt.colorbar(im)
 
-        ax3 = fig.add_subplot(gs[irow,1])
-        im = ax3.imshow(np.where(image<0,0,image),
-                        cmap=plt.cm.gist_yarg,
-                        norm=colors.SymLogNorm(linthresh=1., linscale=1.,
-                                               vmin=0, vmax=vmax))
-        ax3.axis('off')
-        ax3.set_title(f'positive intensity pixels',
-                     fontdict={'fontsize': 6})
-        plt.colorbar(im)
+            ax3 = fig.add_subplot(gs[irow,1])
+            im = ax3.imshow(np.where(image<0,0,image), cmap=plt.cm.gist_yarg, 
+                            norm=colors.SymLogNorm(linthresh=1., linscale=1., vmin=0, vmax=vmax))
+            ax3.axis('off')
+            ax3.set_title(f'positive intensity pixels', fontdict={'fontsize': 6})
+            plt.colorbar(im)
 
-        if output is not None:
-            plt.savefig(output)
+            if output is not None:
+                plt.savefig(output)
         
-    def visualize_stats(self, tag='', output=None):
+    def visualize_stats(self, output=None):
         """
         Plot trajectories of run statistics.
         
         Parameters
         ----------
-        tag : string
-            '' and '_sel' for pre and post outlier removal respectively
-        output : string
+        output : str
             path for optionally saving plot to disk
         """
-        f, (ax1,ax2,ax3,ax4) = plt.subplots(4,1, figsize=(10,8), sharex=True)
+        if self.rank == 0:
+            f, (ax1,ax2,ax3,ax4) = plt.subplots(4,1, figsize=(10,8), sharex=True)
 
-        keys = ['mean', 'max', 'min', 'std_dev']
-        for ax,key in zip([ax1,ax2,ax3,ax4],keys):
-            ax.plot(self.run_stats[key + tag], c='black')
-            ax.set_ylabel(key, fontsize=12)
+            keys = ['mean', 'max', 'min', 'std']
+            for ax,key in zip([ax1,ax2,ax3,ax4],keys):
+                ax.plot(self.stats_final[key], c='black')
+                ax.set_ylabel(key, fontsize=12)
         
-        ax.set_xlabel("Event", fontsize=12)
-        if tag == '_sel':
-            ax1.set_title("Run statistics after outlier removal")
-        else:
+            ax.set_xlabel("Event", fontsize=12)
             ax1.set_title("Run statistics")
             
-        if output is not None:
-            f.savefig(output, dpi=300)
+            if output is not None:
+                f.savefig(output, dpi=300)
     
+
+#### For command line use ####
+            
+def parse_input():
+    """
+    Parse command line input.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--exp', help='Experiment name', required=True, type=str)
+    parser.add_argument('-r', '--run', help='Run number', required=True, type=int)
+    parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M',  required=True, type=str)
+    parser.add_argument('-o', '--outdir', help='Output directory for powders and plots', required=True, type=str)
+    parser.add_argument('-m', '--mask', help='Binary mask for computing trajectories', required=False, type=str)
+    parser.add_argument('--max_events', help='Number of images to process, -1 for full run', required=False, default=-1, type=int)
+
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    
+    params = parse_input()
+    rd = RunDiagnostics(exp=params.exp, run=params.run, det_type=params.det_type) 
+    rd.compute_run_stats(max_events=params.max_events, mask=params.mask) 
+    rd.save_powders(params.outdir)
+    rd.visualize_powder(output=os.path.join(params.outdir, f"powder_r{rd.psi.run:04}.png"))
+    rd.visualize_stats(output=os.path.join(params.outdir, f"stats_r{rd.psi.run:04}.png"))
+
