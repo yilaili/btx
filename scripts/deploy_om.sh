@@ -128,14 +128,14 @@ chmod +x ${WORKSPACE_DIR}/run_parameter_tweaker.sh
 if [ ${HUTCH} == "cxi" ]; then
   TEMPLATE_EXPT="cxilv4418"
   TEMPLATE_DETECTOR="jungfrau4M"
-  TEMPLATE_DETECTOR_PV="detector_z"
+  TEMPLATE_DETECTOR_PV="Jungfrau_z"
   DETECTOR_PV=${TEMPLATE_DETECTOR_PV}
 elif [ ${HUTCH} == "mfx" ]; then
   TEMPLATE_EXPT="mfxlx4219"
   TEMPLATE_DETECTOR="epix10k2M"
   TEMPLATE_DETECTOR_PV="detector_z"
   if [ ${DETECTOR} == 'epix10k2M' ]; then
-    DETECTOR_PV="MFX:ROB:CONT:POS:Z"
+    DETECTOR_PV="robot_detector_z"
   else
     DETECTOR_PV=${TEMPLATE_DETECTOR_PV}
   fi
