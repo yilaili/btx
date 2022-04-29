@@ -25,8 +25,9 @@ class JIDSlurmOperator( BaseOperator ):
 
   btx_locations = {
     'SLAC': "/cds/sw/package/autosfx/btx/",
-    'SRCF_FFB': "/sdf/group/lcls/ds/sw/autosfx/btx/",
+    'SRCF_FFB': "/cds/sw/package/autosfx/btx/",
   }
+  # "/sdf/group/lcls/ds/sw/autosfx/btx/",
 
   endpoints = {
     'start_job': '{experiment_name}/start_job',
