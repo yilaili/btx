@@ -18,22 +18,27 @@ def make_powder(config):
     setup = config.setup
     task = config.make_powder
     """ Generate the max, avg, and std powders for a given run. """
+    taskdir = os.path.join(setup.root_dir, 'powder')
+    os.makedirs(taskdir, exist_ok=True)
     rd = RunDiagnostics(exp=setup.exp,
                         run=setup.run,
                         det_type=setup.det_type)
-
     logger.debug(f'Computing Powder for run {setup.run} of {setup.exp}...')
-    rd.compute_run_stats(n_images=task.n_images,
-                         powder_only=True)
-    logger.info(f'Saving Powders to {setup.root_dir}')
-    rd.save_powders(setup.root_dir)
+    rd.compute_run_stats(max_events=task.max_events, mask=task.mask)
+    logger.info(f'Saving Powders and plots to {taskdir}')
+    rd.save_powders(taskdir)
+    rd.visualize_powder(output=os.path.join(taskdir, f"powder_r{rd.psi.run:04}.png"))
+    rd.visualize_stats(output=os.path.join(taskdir, f"stats_r{rd.psi.run:04}.png"))
     logger.debug('Done!')
     
 def opt_distance(config):
     from btx.diagnostics.geom_opt import GeomOpt
+    from btx.misc.metrology import modify_crystfel_header, generate_geom_file
     setup = config.setup
     task = config.opt_distance
     """ Optimize the detector distance from an AgBehenate run. """
+    taskdir = os.path.join(setup.root_dir, 'geom')
+    os.makedirs(taskdir, exist_ok=True)
     geom_opt = GeomOpt(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
@@ -41,8 +46,14 @@ def opt_distance(config):
     logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
     dist = geom_opt.opt_distance(powder=task.powder,
                                  center=task.center,
-                                 plot=os.path.join(setup.root_dir, task.plot))
+                                 plot=os.path.join(taskdir, f'r{setup.run:04}.png'))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
+    temp_file = os.path.join(os.path.dirname(taskdir), 'temp.geom')
+    geom_file = os.path.join(os.path.dirname(taskdir), f'r{setup.run:04}.geom')
+    generate_geom_file(setup.exp, setup.run, setup.det_type, task.input_geom, temp_file, det_dist=dist)
+    modify_crystfel_header(temp_file, geom_file)
+    os.remove(temp_file)
+    logger.info(f'CrystFEL geom file saved with updated coffset value to: {geom_file}')
     logger.debug('Done!')
 
 def find_peaks(config):
