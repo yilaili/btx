@@ -1,7 +1,7 @@
 setup:
   root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
   exp: 'mfxlv4920'
-  run: 4
+  run: 9
   det_type: 'epix10k2M'
 
 make_powder:
@@ -39,3 +39,5 @@ index:
   multi: True
   profile: True
 
+analyze_sample:
+  tag: ''

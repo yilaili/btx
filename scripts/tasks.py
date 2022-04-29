@@ -1,6 +1,7 @@
 import logging
 import os
 import requests
+import glob
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -90,3 +91,18 @@ def index(config):
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.write_exe()
     logger.info(f'Executable written to {indexer_obj.tmp_exe}')
+
+def analyze_sample(config):
+    from btx.interfaces.stream_interface import StreamInterface
+    setup = config.setup
+    task = config.find_peaks
+    """ Diagnostics including cell distribution and peakogram. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    stream_files = glob.glob(os.path.join(taskdir, f"r*{task.tag}.stream"))
+    st = StreamInterface(input_files=stream_files, cell_only=False)
+    if st.rank == 0:
+        logger.debug(f'Read stream files: {stream_files}')
+        st.plot_cell_parameters(output=os.path.join(taskdir, f"{task.tag}_cell_distribution.png"))
+        st.plot_peakogram(output=os.path.join(taskdir, f"{task.tag}_peakogram.png"))
+        logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
+    logger.debug('Done!')
