@@ -44,12 +44,12 @@ def opt_distance(config):
                        det_type=setup.det_type)
     task.center = tuple([float(elem) for elem in task.center.split()])
     logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
-    dist = geom_opt.opt_distance(powder=task.powder,
+    dist = geom_opt.opt_distance(powder=os.path.join(setup.root_dir, f"powder/powder_max_r{setup.run:04}.npy"),
                                  center=task.center,
                                  plot=os.path.join(taskdir, f'r{setup.run:04}.png'))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
-    temp_file = os.path.join(os.path.dirname(taskdir), 'temp.geom')
-    geom_file = os.path.join(os.path.dirname(taskdir), f'r{setup.run:04}.geom')
+    temp_file = os.path.join(taskdir, 'temp.geom')
+    geom_file = os.path.join(taskdir, f'r{setup.run:04}.geom')
     generate_geom_file(setup.exp, setup.run, setup.det_type, task.input_geom, temp_file, det_dist=dist)
     modify_crystfel_header(temp_file, geom_file)
     os.remove(temp_file)
