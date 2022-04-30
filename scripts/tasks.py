@@ -14,10 +14,10 @@ def test(config):
     requests.post(update_url, json=[ { "key": "root_dir", "value": f"{config.setup.root_dir}" },
                                      { "key": "experiment_name", "value": "mfxp19619"} ])
 
-def make_powder(config):
+def run_analysis(config):
     from btx.diagnostics.run import RunDiagnostics
     setup = config.setup
-    task = config.make_powder
+    task = config.run_analysis
     """ Generate the max, avg, and std powders for a given run. """
     taskdir = os.path.join(setup.root_dir, 'powder')
     os.makedirs(taskdir, exist_ok=True)
@@ -82,20 +82,20 @@ def find_peaks(config):
 def index(config):
     from btx.processing.indexer import Indexer
     setup = config.setup
-    task = config.find_peaks
+    task = config.index
     """ Index run using indexamajig. """
     taskdir = os.path.join(setup.root_dir, 'index')
-    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, taskdir=taskdir, geom=config.index.geom,
-                          cell=config.index.cell, int_rad=config.index.int_radius, methods=config.index.methods, tolerance=config.index.tolerance, 
-                          no_revalidate=config.index.no_revalidate, multi=config.index.multi, profile=config.index.profile)
+    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, taskdir=taskdir, geom=task.geom,
+                          cell=task.cell, int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, 
+                          no_revalidate=task.no_revalidate, multi=task.multi, profile=task.profile)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.write_exe()
     logger.info(f'Executable written to {indexer_obj.tmp_exe}')
 
-def analyze_sample(config):
+def stream_analysis(config):
     from btx.interfaces.stream_interface import StreamInterface
     setup = config.setup
-    task = config.find_peaks
+    task = config.stream_analysis
     """ Diagnostics including cell distribution and peakogram. """
     taskdir = os.path.join(setup.root_dir, 'index')
     stream_files = glob.glob(os.path.join(taskdir, f"r*{task.tag}.stream"))
