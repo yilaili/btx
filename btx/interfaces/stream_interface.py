@@ -2,30 +2,98 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from btx.misc.xtal import compute_resolution
+from mpi4py import MPI
+import glob
+import argparse
+import os
 
 class StreamInterface:
     
-    def __init__(self, input_file, cell_only=False):
-        self.stream_file = input_file
-        self.cell_only = cell_only
-        self.stream_data = self.read_stream(input_file)
+    def __init__(self, input_files, cell_only=False):
+        self.cell_only = cell_only # bool, if True only extract unit cell params
+        self.stream_data = self.read_all_streams(input_files)
     
-    def read_stream(self, input_file):
+    def read_all_streams(self, input_files):
         """
-        Read stream file. Function possibly adapted from CrystFEL.
+        Read stream file(s), with files distributed across multiple ranks
+        if available.
         
         Parameters
         ----------
-        input_file : string
+        input_files : list of str
+            stream file(s) to parse
+        
+        Returns
+        -------
+        stream_data : numpy.ndarray, shape (n_refl,16) or (n_refl,8)
+            [crystal_num,a,b,c,alpha,beta,gamma,h,k,l,I,sigma(I),peak,background,res]
+            or [crystal_num,a,b,c,alpha,beta,gamma] if self.cell_only=False        
+        """
+        # processing all files given to each rank
+        stream_data_rank = []
+        input_sel = self.distribute_streams(input_files) 
+        if len(input_sel) != 0:
+            for ifile in input_sel:
+                stream_data_rank.append(self.read_stream(ifile))
+            stream_data_rank = np.vstack(stream_data_rank)  
+        else:
+            if self.cell_only:
+                stream_data_rank = np.empty((0,8))
+            else:
+                stream_data_rank = np.empty((0,16))
+        
+        # amassing files from different ranks
+        stream_data = self.comm.gather(stream_data_rank, root=0)
+        if self.rank == 0:
+            stream_data = np.vstack(stream_data)
+        return stream_data
+        
+    def distribute_streams(self, input_files):
+        """
+        Evenly distribute stream files among available ranks.
+        
+        Parameters
+        ----------
+        input_files : list of str
+            list of input stream files to read
+    
+        Returns
+        -------
+        input_sel : list of str
+            select list of input stream files for this rank
+        """
+        # set up MPI object
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size() 
+        
+        # divvy up files
+        n_files = len(input_files)
+        split_indices = np.zeros(self.size)
+        for r in range(self.size):
+            num_per_rank = n_files // self.size
+            if r < (n_files % self.size):
+                num_per_rank += 1
+            split_indices[r] = num_per_rank
+        split_indices = np.append(np.array([0]), np.cumsum(split_indices)).astype(int) 
+        return input_files[split_indices[self.rank]:split_indices[self.rank+1]]
+    
+    def read_stream(self, input_file):
+        """
+        Read a single stream file. Function possibly adapted from CrystFEL.
+        
+        Parameters
+        ----------
+        input_file : str
             stream file to parse
         
         Returns
         -------
-        stream_data : numpy.ndarray, shape (n_refl,14) or (n_refl,7)
+        single_stream_data : numpy.ndarray, shape (n_refl,14) or (n_refl,7)
             [crystal_num,a,b,c,alpha,beta,gamma,h,k,l,I,sigma(I),peak,background,res]
             or [crystal_num,a,b,c,alpha,beta,gamma] if self.cell_only=False
         """
-        stream_data = []
+        single_stream_data = []
         n_cryst, n_chunk = -1, -1
         in_refl = False
 
@@ -43,7 +111,7 @@ class StreamInterface:
                 n_cryst+=1
 
                 if self.cell_only:
-                    stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell)))
+                    single_stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell)))
 
             if not self.cell_only:
                 if line.find("Reflections measured after indexing") != -1:
@@ -58,21 +126,21 @@ class StreamInterface:
                     if line.find("h    k    l") == -1:
                         try:
                             reflection = np.array(line.split()[:7]).astype(float)
-                            stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell, reflection, np.array([-1]))))
+                            single_stream_data.append(np.concatenate((np.array([n_chunk, n_cryst]), cell, reflection, np.array([-1]))))
                         except ValueError:
                             print(f"Couldn't parse line {lc}: {line}")
                         continue
 
         f.close()
 
-        stream_data = np.array(stream_data)
+        single_stream_data = np.array(single_stream_data)
         if not self.cell_only:
-            if len(stream_data) == 0:
+            if len(single_stream_data) == 0:
                 print("Warning: no indexed reflections found!")
             else:
-                stream_data[:,-1] = compute_resolution(stream_data[:,2:8], stream_data[:,8:11])
+                single_stream_data[:,-1] = compute_resolution(single_stream_data[:,2:8], single_stream_data[:,8:11])
                 
-        return stream_data
+        return single_stream_data
     
     def get_cell_parameters(self):
         """ Retrieve unit cell parameters: [a,b,c,alpha,beta,gamma] in A/degrees. """
@@ -265,3 +333,25 @@ class StreamInterface:
         f_out.close()
         
         return
+
+#### For command line use ####
+            
+def parse_input():
+    """
+    Parse command line input.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--inputs', help='Input stream files in glob-readable format', required=True, type=str)
+    parser.add_argument('-o', '--outdir', help='Output directory for peakogram and cell plots', required=True, type=str)
+    parser.add_argument('--cell_only', help='Only read unit cell parameters, not reflections', action='store_true')
+
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    
+    params = parse_input()
+    st = StreamInterface(input_files=glob.glob(params.inputs), cell_only=params.cell_only)
+    if st.rank == 0:
+        st.plot_cell_parameters(output=os.path.join(params.outdir, "cell_distribution.png"))
+        if not params.cell_only:
+            st.plot_peakogram(output=os.path.join(params.outdir, "peakogram.png"))

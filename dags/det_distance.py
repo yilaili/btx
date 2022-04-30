@@ -16,11 +16,11 @@ dag = DAG(
 
 
 # Tasks SETUP
-task_id='make_powder'
-make_powder = JIDSlurmOperator( task_id=task_id, dag=dag)
+task_id='run_analysis'
+run_analysis = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 task_id='opt_distance'
 opt_distance = JIDSlurmOperator( task_id=task_id, dag=dag)
 
 # Draw the DAG
-make_powder >> opt_distance
+run_analysis >> opt_distance
