@@ -14,7 +14,6 @@ run_analysis:
 
 opt_distance:
   center: 960 960
-  input_geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/176-end.data'
 
 find_peaks:
   tag: ''

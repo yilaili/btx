@@ -24,7 +24,7 @@ def fetch_mask(config):
     mi = MaskInterface(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
-    mi.retrieve_from_mrxv(mrxv_path=task.mrxv_path, dataset=task.dataset)
+    mi.retrieve_from_mrxv(dataset=task.dataset)
     logger.info(f'Saving mrxv mask to {taskdir}')
     mi.save_mask(os.path.join(taskdir, f'r0000.npy'))
     logger.debug('Done!')
@@ -48,7 +48,8 @@ def run_analysis(config):
     """ Generate the max, avg, and std powders for a given run. """
     taskdir = os.path.join(setup.root_dir, 'powder')
     os.makedirs(taskdir, exist_ok=True)
-    mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'),run=setup.run)
+    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
+    mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     logger.debug(f'Applying mask: {mask_file}...')
     rd = RunDiagnostics(exp=setup.exp,
                         run=setup.run,
@@ -57,33 +58,36 @@ def run_analysis(config):
     rd.compute_run_stats(max_events=task.max_events, mask=mask_file)
     logger.info(f'Saving Powders and plots to {taskdir}')
     rd.save_powders(taskdir)
-    rd.visualize_powder(output=os.path.join(taskdir, f"powder_r{rd.psi.run:04}.png"))
-    rd.visualize_stats(output=os.path.join(taskdir, f"stats_r{rd.psi.run:04}.png"))
+    rd.visualize_powder(output=os.path.join(taskdir, f"figs/powder_r{rd.psi.run:04}.png"))
+    rd.visualize_stats(output=os.path.join(taskdir, f"figs/stats_r{rd.psi.run:04}.png"))
     logger.debug('Done!')
     
 def opt_distance(config):
     from btx.diagnostics.geom_opt import GeomOpt
     from btx.misc.metrology import modify_crystfel_header, generate_geom_file
+    from btx.misc.shortcuts import fetch_latest
     setup = config.setup
     task = config.opt_distance
     """ Optimize the detector distance from an AgBehenate run. """
     taskdir = os.path.join(setup.root_dir, 'geom')
     os.makedirs(taskdir, exist_ok=True)
+    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
     geom_opt = GeomOpt(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
     task.center = tuple([float(elem) for elem in task.center.split()])
     logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
-    dist = geom_opt.opt_distance(powder=os.path.join(setup.root_dir, f"powder/powder_max_r{setup.run:04}.npy"),
+    dist = geom_opt.opt_distance(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
                                  center=task.center,
-                                 plot=os.path.join(taskdir, f'r{setup.run:04}.png'))
+                                 plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
-    temp_file = os.path.join(taskdir, 'temp.geom')
-    geom_file = os.path.join(taskdir, f'r{setup.run:04}.geom')
-    generate_geom_file(setup.exp, setup.run, setup.det_type, task.input_geom, temp_file, det_dist=dist)
-    modify_crystfel_header(temp_file, geom_file)
-    os.remove(temp_file)
-    logger.info(f'CrystFEL geom file saved with updated coffset value to: {geom_file}')
+    geom_in = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
+    geom_temp = os.path.join(taskdir, 'temp.geom')
+    geom_out = os.path.join(taskdir, f'r{setup.run:04}.geom')
+    generate_geom_file(setup.exp, setup.run, setup.det_type, geom_in, geom_temp, det_dist=dist)
+    modify_crystfel_header(geom_temp, geom_out)
+    os.remove(geom_temp)
+    logger.info(f'CrystFEL geom file saved with updated coffset value to: {geom_out}')
     logger.debug('Done!')
 
 def find_peaks(config):

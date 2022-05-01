@@ -72,7 +72,7 @@ class RunDiagnostics:
             path to directory in which to save powders, optional
         """
         for key in self.powders_final.keys():
-            np.save(os.path.join(outdir, f"powder_{key}_r{self.psi.run:04}.npy"), self.powders_final[key])
+            np.save(os.path.join(outdir, f"r{self.psi.run:04}_{key}.npy"), self.powders_final[key])
 
     def compute_stats(self, img):
         """
