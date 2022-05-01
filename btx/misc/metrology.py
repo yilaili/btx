@@ -4,6 +4,33 @@ import argparse
 from psgeom import camera, sensors
 from btx.interfaces.psana_interface import PsanaInterface
 
+def retrieve_from_mrxv(det_type, out_geom, mrxv_path='/cds/sw/package/autosfx/mrxv/geometries'):
+    """
+    Fetch latest geom file for this detector from mrxv. Currently
+    assume that the file is in CrystFEL geom format. C
+    
+    Parameters
+    ----------
+    det_type : str
+        detector name
+    mrxv_path : str
+        path to mrxv geom folder
+    """
+    try:
+        in_geom = os.path.join(mrxv_path, f"{det_type}_latest.geom")
+        print(in_geom)
+        assert os.path.isfile(in_geom)
+        print(f"Retrieving geom file {in_geom}")
+    except:
+        sys.exit("Detector type not yet available in mrxv")
+
+    if det_type == 'epix10k2M':
+        geom = camera.CompoundAreaCamera.from_crystfel_file(in_geom, element_type=sensors.Epix10kaSegment)
+    else:
+        geom = camera.CompoundAreaCamera.from_crystfel_file(in_geom)
+
+    geom.to_crystfel_file(out_geom)
+
 def modify_crystfel_header(input_file, output_file):
     """
     Modify the header of a psgeom-generated Crystfel (.geom) file,

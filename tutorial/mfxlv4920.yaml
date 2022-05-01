@@ -5,8 +5,9 @@ setup:
   det_type: 'Rayonix'
 
 fetch_mask:
-  mrxv_path: '/cds/home/a/apeck/mrxv/masks'
   dataset: '/entry_1/data_1/mask'
+
+fetch_geom:
 
 run_analysis:
   max_events: -1

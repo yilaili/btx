@@ -25,8 +25,19 @@ def fetch_mask(config):
                        run=setup.run,
                        det_type=setup.det_type)
     mi.retrieve_from_mrxv(mrxv_path=task.mrxv_path, dataset=task.dataset)
-    logger.info(f'Saving Mask to {taskdir}')
+    logger.info(f'Saving mrxv mask to {taskdir}')
     mi.save_mask(os.path.join(taskdir, f'r0000.npy'))
+    logger.debug('Done!')
+
+def fetch_geom(config):
+    from btx.misc.metrology import retrieve_from_mrxv
+    setup = config.setup
+    task = config.fetch_geom
+    """ Fetch latest geometry for this detector from mrxv. """
+    taskdir = os.path.join(setup.root_dir, 'geom')
+    os.makedirs(taskdir, exist_ok=True)
+    logger.info(f'Saving mrxv geom to {taskdir}')
+    retrieve_from_mrxv(det_type=setup.det_type, out_geom=os.path.join(taskdir, f'r0000.geom'))
     logger.debug('Done!')
 
 def run_analysis(config):
