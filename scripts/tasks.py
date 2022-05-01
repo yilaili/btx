@@ -31,16 +31,19 @@ def fetch_mask(config):
 
 def run_analysis(config):
     from btx.diagnostics.run import RunDiagnostics
+    from btx.misc.shortcuts import fetch_latest
     setup = config.setup
     task = config.run_analysis
     """ Generate the max, avg, and std powders for a given run. """
     taskdir = os.path.join(setup.root_dir, 'powder')
     os.makedirs(taskdir, exist_ok=True)
+    mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'),run=setup.run)
+    logger.debug(f'Applying mask: {mask_file}...')
     rd = RunDiagnostics(exp=setup.exp,
                         run=setup.run,
                         det_type=setup.det_type)
     logger.debug(f'Computing Powder for run {setup.run} of {setup.exp}...')
-    rd.compute_run_stats(max_events=task.max_events, mask=task.mask)
+    rd.compute_run_stats(max_events=task.max_events, mask=mask_file)
     logger.info(f'Saving Powders and plots to {taskdir}')
     rd.save_powders(taskdir)
     rd.visualize_powder(output=os.path.join(taskdir, f"powder_r{rd.psi.run:04}.png"))

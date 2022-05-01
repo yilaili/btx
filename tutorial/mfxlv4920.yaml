@@ -10,7 +10,6 @@ fetch_mask:
 
 run_analysis:
   max_events: -1
-  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/rayonix_mask.npy'
 
 opt_distance:
   center: 960 960
