@@ -1,7 +1,7 @@
 setup:
   root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
   exp: 'mfxlv4920'
-  run: 234
+  run: 175
   det_type: 'Rayonix'
 
 fetch_mask:
