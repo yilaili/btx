@@ -1,5 +1,8 @@
 import numpy as np
-import h5py, sys
+import h5py
+import os
+import sys
+import glob
 from btx.interfaces.psana_interface import *
 
 class MaskInterface:
@@ -16,7 +19,7 @@ class MaskInterface:
     def generate_from_psana_run(self, thresholds, n_images=1):
         """
         Generate a mask by extracting the first num_images from the indicated run,
-        thresholding each, and then merging them. 
+        thresholding each, and then merging them. A value of 0 indicates a bad pixel.
         
         Parameters
         ----------
@@ -24,11 +27,6 @@ class MaskInterface:
             (lower, upper) thresholds for pixel value
         n_images : int
             number of images to threshold
-            
-        Returns
-        -------
-        mask : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss)
-            binary mask, where 0 indicates a bad pixel
         """
         # retrieve images from run
         images = self.psi.get_images(n_images, assemble=False)
@@ -43,6 +41,33 @@ class MaskInterface:
             self.mask = mask
         else:
             self.mask *= mask
+
+    def retrieve_from_mrxv(self, mrxv_path='/cds/sw/package/autosfx/mrxv/masks', dataset='/entry_1/data_1/mask'):
+        """
+        Retrieve the latest mask from mrxv.
+
+        Parameters
+        ----------
+        dataset : str
+            internal path to dataset, only relevant for mask_format='crystfel'
+        """
+        try:
+            mask_file = glob.glob(os.path.join(mrxv_path, f"{self.det_type}_latest.*"))[0]
+            assert os.path.isfile(mask_file)
+            print(f"Retrieving mask file {mask_file}")
+        except:
+            sys.exit("Detector type not yet available in mrxv")
+
+        if h5py.is_hdf5(mask_file):
+            print("Crystfel mask detected")
+            mask_format = 'crystfel'
+        elif mask_file.split('.')[-1] == 'npy':
+            mask_format = 'psana'
+        else:
+            mask_format = 'cctbx'
+
+        self.load_mask(mask_file, mask_format=mask_format, dataset=dataset)
+        assert self.psi.det.shape() == self.mask.shape
     
     def load_mask(self, input_file, mask_format='crystfel', dataset='/entry_1/data_1/mask'):
         """

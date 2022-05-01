@@ -1,4 +1,6 @@
+import numpy as np
 import os
+import glob
 
 class AttrDict(dict):
     """ Nested Attribute Dictionary
@@ -29,3 +31,27 @@ class AttrDict(dict):
             return self.__getitem__(item)
         except KeyError:
             raise AttributeError(item)
+
+def fetch_latest(fnames, run):
+    """
+    Fetch the most recently created (in terms of run numbers) file.
+    Here we assume that files are named /{base_path}/r{run:04}.* .
+    
+    Parameters
+    ----------
+    fnames : str
+        glob-expandable string pointing to geom or mask files
+    run : int
+        run number
+    
+    Returns
+    -------
+    fname : str
+        filename of relevant geom or mask file
+    """
+    fnames = glob.glob(fnames)
+    avail = [os.path.basename(f)[1:].split('.')[0] for f in fnames]
+    avail = np.array([int(a) for a in avail])
+    sort_idx = np.argsort(avail)
+    idx = np.searchsorted(avail[sort_idx], run, side='right') - 1
+    return fnames[sort_idx[idx]]

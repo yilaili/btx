@@ -65,6 +65,11 @@ class PeakFinder:
         # additional self variables for tracking peak stats
         self.iX = self.psi.det.indexes_x(self.psi.run).astype(np.int64)
         self.iY = self.psi.det.indexes_y(self.psi.run).astype(np.int64)
+        if det_type == 'Rayonix':
+            self.iX = np.expand_dims(self.iX, axis=0)
+            self.iY = np.expand_dims(self.iY, axis=0)
+        print(f"self.iX.shape = {self.iX.shape}")
+            
         self.ipx, self.ipy = self.psi.det.point_indexes(self.psi.run, pxy_um=(0, 0))
 
         # retrieve clen from psana if None or a PV code is supplied
@@ -136,7 +141,10 @@ class PeakFinder:
         
         # for storing images in crystFEL format
         det_shape = self.psi.det.shape()
-        dim0, dim1 = det_shape[0] * det_shape[1], det_shape[2]
+        if self.psi.det_type == 'Rayonix':
+            dim0, dim1 = det_shape[0], det_shape[1]
+        else:
+            dim0, dim1 = det_shape[0] * det_shape[1], det_shape[2]
         data_1 = entry_1.create_dataset('/entry_1/data_1/data', (self.n_events, dim0, dim1), chunks=(1, dim0, dim1),
                                         maxshape=(None, dim0, dim1),dtype=np.float32)
         data_1.attrs["axes"] = "experiment_identifier"
