@@ -26,7 +26,7 @@ def fetch_mask(config):
                        det_type=setup.det_type)
     mi.retrieve_from_mrxv(mrxv_path=task.mrxv_path, dataset=task.dataset)
     logger.info(f'Saving Mask to {taskdir}')
-    mi.save_mask(os.path.join(taskdir, f'r{setup.run:04}.npy'))
+    mi.save_mask(os.path.join(taskdir, f'r0000.npy'))
     logger.debug('Done!')
 
 def run_analysis(config):
