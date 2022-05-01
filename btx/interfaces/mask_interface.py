@@ -16,7 +16,7 @@ class MaskInterface:
     def generate_from_psana_run(self, thresholds, n_images=1):
         """
         Generate a mask by extracting the first num_images from the indicated run,
-        thresholding each, and then merging them. 
+        thresholding each, and then merging them. A value of 0 indicates a bad pixel.
         
         Parameters
         ----------
@@ -24,11 +24,6 @@ class MaskInterface:
             (lower, upper) thresholds for pixel value
         n_images : int
             number of images to threshold
-            
-        Returns
-        -------
-        mask : numpy.ndarray, shape (n_panels, n_pixels_fs, n_pixels_ss)
-            binary mask, where 0 indicates a bad pixel
         """
         # retrieve images from run
         images = self.psi.get_images(n_images, assemble=False)
