@@ -135,11 +135,12 @@ def stream_analysis(config):
     task = config.stream_analysis
     """ Diagnostics including cell distribution and peakogram. """
     taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
     stream_files = glob.glob(os.path.join(taskdir, f"r*{task.tag}.stream"))
     st = StreamInterface(input_files=stream_files, cell_only=False)
     if st.rank == 0:
         logger.debug(f'Read stream files: {stream_files}')
-        st.plot_cell_parameters(output=os.path.join(taskdir, f"{task.tag}_cell_distribution.png"))
-        st.plot_peakogram(output=os.path.join(taskdir, f"{task.tag}_peakogram.png"))
+        st.plot_cell_parameters(output=os.path.join(taskdir, f"figs/cell_{task.tag}.png"))
+        st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
         logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
     logger.debug('Done!')
