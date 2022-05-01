@@ -15,18 +15,39 @@ class MaskInterface:
         
         self.psi = PsanaInterface(exp=self.exp, run=self.run, det_type=self.det_type) 
         self.pixel_index_map = retrieve_pixel_index_map(self.psi.det.geometry(self.run))
+
+    def mask_border_pixels(self, n_edge):
+        """
+        Mask the edge of each panel with a border n_edge pixels deep.
         
-    def generate_from_psana_run(self, thresholds, n_images=1):
+        Parameters
+        ----------
+        n_edge : int
+            number of pixels along each panel edge to mask
+        """
+        panel_mask = np.zeros(self.mask.shape[-2:]).astype(int)
+        panel_mask[n_edge:-n_edge,n_edge:-n_edge] = 1
+    
+        if len(self.mask.shape) == 2:
+            self.mask *= panel_mask
+        else:
+            for panel in range(self.mask.shape[0]):
+                self.mask[panel] *= panel_mask
+
+    def generate_from_psana_run(self, thresholds, n_images=1, n_edge=0):
         """
         Generate a mask by extracting n_images random images from the indicated run,
         thresholding each, and then merging them. A value of 0 indicates a bad pixel.
-        
+        If n_edge is supplied, the border pixels of each panel will be masked as well.
+
         Parameters
         ----------
         thresholds : tuple, 2d
             (lower, upper) thresholds for pixel value
         n_images : int
             number of images to threshold
+        n_edge : int
+            depth of border in pixels to mask for each panel
         """
         # retrieve n_images random events
         imgs = np.zeros((n_images,) + self.psi.det.shape())
@@ -45,6 +66,9 @@ class MaskInterface:
             self.mask = mask
         else:
             self.mask *= mask
+
+        if n_edge!=0:
+            self.mask_border_pixels(n_edge)
 
     def retrieve_from_mrxv(self, mrxv_path='/cds/sw/package/autosfx/mrxv/masks', dataset='/entry_1/data_1/mask'):
         """

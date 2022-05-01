@@ -56,7 +56,7 @@ def build_mask(config):
         mi.load_mask(mask_file, mask_format='psana')
         logger.debug(f'New mask will be combined with {mask_file}')
     task.thresholds = tuple([float(elem) for elem in task.thresholds.split()])
-    mi.generate_from_psana_run(thresholds=task.thresholds,n_images=task.n_images)
+    mi.generate_from_psana_run(thresholds=task.thresholds, n_images=task.n_images, n_edge=task.n_edge)
     logger.info(f'Saving newly generated mask to {taskdir}')
     mi.save_mask(os.path.join(taskdir, f'r{mi.psi.run:04}.npy'))
     logger.debug('Done!')
