@@ -14,6 +14,21 @@ def test(config):
     requests.post(update_url, json=[ { "key": "root_dir", "value": f"{config.setup.root_dir}" },
                                      { "key": "experiment_name", "value": "mfxp19619"} ])
 
+def fetch_mask(config):
+    from btx.interfaces.mask_interface import MaskInterface
+    setup = config.setup
+    task = config.fetch_mask
+    """ Fetch most recent mask for this detector from mrxv. """
+    taskdir = os.path.join(setup.root_dir, 'mask')
+    os.makedirs(taskdir, exist_ok=True)
+    mi = MaskInterface(exp=setup.exp,
+                       run=setup.run,
+                       det_type=setup.det_type)
+    mi.retrieve_from_mrxv(mrxv_path=task.mrxv_path, dataset=task.dataset)
+    logger.info(f'Saving Mask to {taskdir}')
+    mi.save_mask(os.path.join(taskdir, f'r{setup.run:04}.npy'))
+    logger.debug('Done!')
+
 def run_analysis(config):
     from btx.diagnostics.run import RunDiagnostics
     setup = config.setup

@@ -1,27 +1,31 @@
 setup:
   root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
   exp: 'mfxlv4920'
-  run: 9
-  det_type: 'epix10k2M'
+  run: 234
+  det_type: 'Rayonix'
+
+fetch_mask:
+  mrxv_path: '/cds/home/a/apeck/mrxv/masks'
+  dataset: '/entry_1/data_1/mask'
 
 run_analysis:
   max_events: -1
-  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/mrxv_mask.npy'
+  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/rayonix_mask.npy'
 
 opt_distance:
-  center: 834 832.5
-  input_geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/4-end.data'
+  center: 960 960
+  input_geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/176-end.data'
 
 find_peaks:
   tag: ''
-  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/mrxv_mask.npy'
-  psana_mask: True
-  min_peaks: 2
+  mask: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/rayonix_mask.npy'
+  psana_mask: False
+  min_peaks: 10
   max_peaks: 2048
-  npix_min: 1
+  npix_min: 2
   npix_max: 30
-  amax_thr: 800.
-  atot_thr: 1000.
+  amax_thr: 300.
+  atot_thr: 600.
   son_min: 10.0
   peak_rank: 3
   r0: 3.0
@@ -30,7 +34,7 @@ find_peaks:
 
 index:
   tag: ''
-  geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/r0004-end.geom'
+  geom: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/geom/r0175.geom'
   int_radius: '4,5,6'
   methods: 'mosflm'
   cell: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/cco.cell'
