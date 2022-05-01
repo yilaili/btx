@@ -18,7 +18,7 @@ class MaskInterface:
         
     def generate_from_psana_run(self, thresholds, n_images=1):
         """
-        Generate a mask by extracting the first num_images from the indicated run,
+        Generate a mask by extracting n_images random images from the indicated run,
         thresholding each, and then merging them. A value of 0 indicates a bad pixel.
         
         Parameters
@@ -28,12 +28,16 @@ class MaskInterface:
         n_images : int
             number of images to threshold
         """
-        # retrieve images from run
-        images = self.psi.get_images(n_images, assemble=False)
-        
+        # retrieve n_images random events
+        imgs = np.zeros((n_images,) + self.psi.det.shape())
+        indices = np.random.randint(0, high=self.psi.max_events, size=n_images)
+        for i,idx in enumerate(indices):
+            evt = self.psi.runner.event(self.psi.times[idx])
+            imgs[i] = self.psi.det.calib(evt=evt)
+    
         # apply thresholds and set valid pixels to 1
-        images[(images < thresholds[0]) | (images > thresholds[1])] = 0
-        mask = np.prod(images, axis=0)
+        imgs[(imgs < thresholds[0]) | (imgs > thresholds[1])] = 0
+        mask = np.prod(imgs, axis=0)
         mask[mask!=0] = 1
         mask = mask.astype(int)
         
