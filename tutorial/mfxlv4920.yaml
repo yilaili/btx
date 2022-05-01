@@ -9,6 +9,11 @@ fetch_mask:
 
 fetch_geom:
 
+build_mask:
+  thresholds: -10 2000
+  n_images: 10
+  combine: True
+
 run_analysis:
   max_events: -1
 

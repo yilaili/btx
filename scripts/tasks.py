@@ -40,6 +40,27 @@ def fetch_geom(config):
     retrieve_from_mrxv(det_type=setup.det_type, out_geom=os.path.join(taskdir, f'r0000.geom'))
     logger.debug('Done!')
 
+def build_mask(config):
+    from btx.interfaces.mask_interface import MaskInterface
+    from btx.misc.shortcuts import fetch_latest
+    setup = config.setup
+    task = config.build_mask
+    """ Generate a mask by thresholding events from a psana run. """
+    taskdir = os.path.join(setup.root_dir, 'mask')
+    os.makedirs(taskdir, exist_ok=True)
+    mi = MaskInterface(exp=setup.exp,
+                       run=setup.run,
+                       det_type=setup.det_type)
+    if task.combine:
+        mask_file = fetch_latest(fnames=os.path.join(taskdir, 'r*.npy'), run=setup.run)
+        mi.load_mask(mask_file, mask_format='psana')
+        logger.debug(f'New mask will be combined with {mask_file}')
+    task.thresholds = tuple([float(elem) for elem in task.thresholds.split()])
+    mi.generate_from_psana_run(thresholds=task.thresholds,n_images=task.n_images)
+    logger.info(f'Saving newly generated mask to {taskdir}')
+    mi.save_mask(os.path.join(taskdir, f'r{mi.psi.run:04}.npy'))
+    logger.debug('Done!')
+
 def run_analysis(config):
     from btx.diagnostics.run import RunDiagnostics
     from btx.misc.shortcuts import fetch_latest
