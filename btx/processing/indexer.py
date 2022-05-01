@@ -6,7 +6,7 @@ class Indexer:
     
     """ Index cxi files using indexamajig: https://www.desy.de/~twhite/crystfel/manual-indexamajig.html """
 
-    def __init__(self, exp, run, det_type, taskdir, geom, cell, int_rad='4,5,6', methods='mosflm',
+    def __init__(self, exp, run, det_type, tag, taskdir, geom, cell, int_rad='4,5,6', methods='mosflm',
                  tolerance='5,5,5,1.5', no_revalidate=True, multi=True, profile=True):
         
         # general paramters
@@ -23,7 +23,7 @@ class Indexer:
         self.no_revalidate = no_revalidate # bool, skip validation step to omit iffy peaks
         self.multi = multi # bool, enable multi-lattice indexing
         self.profile = profile # bool, display timing data
-        self._retrieve_paths(taskdir)
+        self._retrieve_paths(taskdir, tag)
         self._parallel_logic()
 
     def _parallel_logic(self):
@@ -39,7 +39,7 @@ class Indexer:
         else:
             self.rank = 0
 
-    def _retrieve_paths(self, taskdir):
+    def _retrieve_paths(self, taskdir, tag):
         """
         Retrieve the paths for the input .lst and output .stream file 
         consistent with the btx analysis directory structure.
@@ -48,9 +48,11 @@ class Indexer:
         ----------
         taskdir : str
             path to output folder for indexing results
+        tag : str
+            filename extension suffix
         """
         self.lst = os.path.join(taskdir ,f'r{self.run:04}/r{self.run:04}.lst')
-        self.stream = os.path.join(taskdir, f'r{self.run:04}.stream')
+        self.stream = os.path.join(taskdir, f'r{self.run:04}_{tag}.stream')
         if "TMP_EXE" in os.environ:
             self.tmp_exe = os.environ['TMP_EXE']
         else:

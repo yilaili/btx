@@ -116,13 +116,15 @@ def find_peaks(config):
 
 def index(config):
     from btx.processing.indexer import Indexer
+    from btx.misc.shortcuts import fetch_latest
     setup = config.setup
     task = config.index
     """ Index run using indexamajig. """
     taskdir = os.path.join(setup.root_dir, 'index')
-    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, taskdir=taskdir, geom=task.geom,
-                          cell=task.cell, int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, 
-                          no_revalidate=task.no_revalidate, multi=task.multi, profile=task.profile)
+    geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
+    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, 
+                          taskdir=taskdir, geom=geom_file, cell=task.cell, int_rad=task.int_radius, methods=task.methods, 
+                          tolerance=task.tolerance, no_revalidate=task.no_revalidate, multi=task.multi, profile=task.profile)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.write_exe()
     logger.info(f'Executable written to {indexer_obj.tmp_exe}')
