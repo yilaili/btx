@@ -58,8 +58,9 @@ class RunDiagnostics:
             self.powders_final['max'] = np.max(powder_max, axis=0)
             self.powders_final['avg'] = powder_sum / float(total_n_proc)
             self.powders_final['std'] = np.sqrt(powder_sqr / float(total_n_proc) - np.square(self.powders_final['avg']))
-            for key in self.powders_final.keys():
-                self.powders_final[key] = assemble_image_stack_batch(self.powders_final[key], self.pixel_index_map)
+            if self.psi.det_type != 'Rayonix':
+                for key in self.powders_final.keys():
+                    self.powders_final[key] = assemble_image_stack_batch(self.powders_final[key], self.pixel_index_map)
 
     def save_powders(self, outdir):
         """
