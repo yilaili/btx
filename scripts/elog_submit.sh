@@ -72,8 +72,10 @@ case $FACILITY in
     ;;
   'SRCF_FFB')
     SIT_PSDM_DATA_DIR='/cds/data/drpsrcf/'
+    ;;
   *)
     echo "ERROR! $FACILITY is not recognized."
+    ;;
 esac
 
 QUEUE=${QUEUE:='psanaq'}
