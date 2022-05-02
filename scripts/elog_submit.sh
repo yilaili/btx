@@ -128,7 +128,7 @@ export TMP_EXE=${TMP_EXE}
 
 THIS_CONFIGFILE=${CONFIGFILE}
 if [ ${RUN_NUM} != 'None' ]; then
-  THIS_CONFIGFILE=${CONFIGFILE%.*}_${RUN_NUM}.yaml
+  THIS_CONFIGFILE="${CONFIGFILE%.*}_${RUN_NUM}.yaml"
   sed "s/run:/run: ${RUN_NUM} #/g" $CONFIGFILE > ${THIS_CONFIGFILE}
 fi
 
