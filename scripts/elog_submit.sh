@@ -96,6 +96,10 @@ QUEUE=${QUEUE:='ffbh3q'}
 CORES=${CORES:=1}
 EXPERIMENT=${EXPERIMENT:='None'}
 RUN_NUM=${RUN_NUM:='None'}
+THIS_CONFIGFILE=${CONFIGFILE}
+if [ ${RUN_NUM} != 'None' ]; then
+  THIS_CONFIGFILE="${CONFIGFILE%.*}_${RUN_NUM}.yaml"
+fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
@@ -126,11 +130,9 @@ export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
 
-THIS_CONFIGFILE=${CONFIGFILE}
 if [ ${RUN_NUM} != 'None' ]; then
-  THIS_CONFIGFILE="${CONFIGFILE%.*}_${RUN_NUM}.yaml"
   echo "new config file: ${THIS_CONFIGFILE}"
-  sed "s/run:/run: ${RUN_NUM} #/g" $CONFIGFILE > ${THIS_CONFIGFILE}
+  sed "s/run:/run: ${RUN_NUM} #/g" ${CONFIGFILE} > ${THIS_CONFIGFILE}
 fi
 
 echo "$MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK"
