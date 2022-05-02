@@ -9,6 +9,8 @@ $(basename "$0"):
   OPTIONS:
     -h|--help
       Definition of options
+    -f|--facility
+      Facility where we are running at
     -q|--queue
       Queue to use on SLURM
     -n|--ncores
@@ -29,6 +31,11 @@ do
     -h|--help)
       usage
       exit
+      ;;
+    -f|--facility)
+      FACILITY="$2"
+      shift
+      shift
       ;;
     -q|--queue)
       QUEUE="$2"
@@ -58,6 +65,19 @@ do
 done
 set -- "${POSITIONAL[@]}"
 
+FACILITY=${FACILITY:='SLAC'}
+case $FACILITY in
+  'SLAC')
+    SIT_PSDM_DATA_DIR='/cds/data/psdm/'
+    ;;
+  'SRCF_FFB')
+    SIT_PSDM_DATA_DIR='/cds/data/drpsrcf/'
+    ;;
+  *)
+    echo "ERROR! $FACILITY is not recognized."
+    ;;
+esac
+
 QUEUE=${QUEUE:='psanaq'}
 CORES=${CORES:=1}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -83,6 +103,7 @@ source /reg/g/psdm/etc/psconda.sh -py3  #TODO: get rid of hard-code
 conda env list | grep '*'
 which mpirun
 which python
+export SIT_PSDM_DATA=${SIT_PSDM_DATA_DIR}
 export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
