@@ -17,6 +17,10 @@ $(basename "$0"):
       Number of cores
     -c|--config_file
       Input config file
+    -e|--experiment_name
+      Experiment Name
+    -r|--run_number
+      Run Number
     -t|--task
       Task name
 EOF
@@ -52,6 +56,16 @@ do
       shift
       shift
       ;;
+    -e|--experiment_name)
+      EXPERIMENT=$2
+      shift
+      shift
+      ;;
+    -r|--run_number)
+      RUN_NUM=$2
+      shift
+      shift
+      ;;
     -t|--task)
       TASK="$2"
       shift
@@ -80,6 +94,9 @@ esac
 
 QUEUE=${QUEUE:='ffbh3q'}
 CORES=${CORES:=1}
+EXPERIMENT=${EXPERIMENT:='None'}
+RUN_NUM=${RUN_NUM:='None'}
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
 if [ ${CORES} -gt 1 ]; then
@@ -109,8 +126,15 @@ export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
 
-echo "$MAIN_PY -c $CONFIGFILE -t $TASK" 
-$MAIN_PY -c $CONFIGFILE -t $TASK
+THIS_CONFIGFILE=${CONFIGFILE}
+if [ ${RUN_NUM} != 'None' ]; then
+  THIS_CONFIGFILE=${CONFIGFILE%.*}_${RUN_NUM}.yaml
+  sed "s/run:/run: ${RUN_NUM} #/g" $CONFIGFILE > ${THIS_CONFIGFILE}
+fi
+
+echo "$MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK"
+$MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK
+rm -f ${THIS_CONFIGFILE}
 if [ -f ${TMP_EXE} ]; then chmod +x ${TMP_EXE}; . ${TMP_EXE}; rm -f ${TMP_EXE}; fi
 EOF
 

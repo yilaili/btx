@@ -48,7 +48,9 @@ if __name__ == '__main__':
                 "config_file": args.config,
                 "dag": args.dag,
                 "queue": args.queue,
-                "ncores": args.ncores
+                "ncores": args.ncores,
+                "experiment_name": experiment_name,
+                "run_number": run_num
             }
         }
     }
