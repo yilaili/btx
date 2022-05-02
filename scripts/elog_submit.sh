@@ -65,7 +65,7 @@ do
 done
 set -- "${POSITIONAL[@]}"
 
-FACILITY=${FACILITY:='SLAC'}
+FACILITY=${FACILITY:='SRCF_FFB'}
 case $FACILITY in
   'SLAC')
     SIT_PSDM_DATA_DIR='/cds/data/psdm/'
@@ -78,7 +78,7 @@ case $FACILITY in
     ;;
 esac
 
-QUEUE=${QUEUE:='psanaq'}
+QUEUE=${QUEUE:='ffbh3q'}
 CORES=${CORES:=1}
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 MAIN_PY="${SCRIPT_DIR}/main.py"
