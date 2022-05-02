@@ -377,9 +377,10 @@ class PeakFinder:
         update_url : str
             elog URL for posting progress update
         """
-        requests.post(update_url, json=[ { "key": "Number of events processed", "value": f"{self.n_events_per_rank[-1]}" },
-                                         { "key": "Number of hits found", "value": f"{self.n_hits_total}"},
-                                         { "key": "Fractional hit rate", "value": f"{(self.n_hits_total/self.n_events_per_rank[-1]):.2f}"}, ])
+        if self.rank == 0:
+            requests.post(update_url, json=[ { "key": "Number of events processed", "value": f"{self.n_events_per_rank[-1]}" },
+                                            { "key": "Number of hits found", "value": f"{self.n_hits_total}"},
+                                            { "key": "Fractional hit rate", "value": f"{(self.n_hits_total/self.n_events_per_rank[-1]):.2f}"}, ])
 
     def add_virtual_dataset(self, vfname, fnames, dname, shape, dtype, mode='a'):
         """
