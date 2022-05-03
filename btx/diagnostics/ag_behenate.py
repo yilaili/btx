@@ -1,6 +1,9 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from btx.misc.radial import radial_profile, q2pix, pix2q
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.colors as colors
+from matplotlib.colors import LogNorm
 
 class AgBehenate:
     
@@ -102,7 +105,7 @@ class AgBehenate:
         
         return opt_distance
     
-    def visualize_results(self, image, mask=None, vmax=50,
+    def visualize_results(self, image, mask=None, vmax=None,
                           center=None, peaks_predicted=None, peaks_observed=None,
                           scores=None, Dq=None,
                           radialprofile=None, qprofile=None, plot=''):
@@ -143,6 +146,8 @@ class AgBehenate:
         ax3 = plt.subplot2grid((nrow, ncol), (irow, 0), rowspan=nrow-irow, colspan=ncol)
         if mask is not None:
             image *= mask
+        if vmax is None:
+            vmax = 2*np.mean(image)
         ax3.imshow(image,interpolation='none',vmin=0,vmax=vmax)
         ax3.set_title('Average Silver Behenate')
         if center is not None:
