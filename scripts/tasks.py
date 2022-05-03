@@ -11,8 +11,7 @@ update_url = os.environ.get('JID_UPDATE_COUNTERS')
 
 def test(config):
     print(config)
-    requests.post(update_url, json=[ { "key": "root_dir", "value": f"{config.setup.root_dir}" },
-                                     { "key": "experiment_name", "value": "mfxp19619"} ])
+    requests.post(update_url, json=[ { "key": "root_dir", "value": f"{config.setup.root_dir}" } ])
 
 def fetch_mask(config):
     from btx.interfaces.mask_interface import MaskInterface
