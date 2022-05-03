@@ -378,7 +378,8 @@ class PeakFinder:
             elog URL for posting progress update
         """
         if self.rank == 0:
-            requests.post(update_url, json=[ { "key": "Number of events processed", "value": f"{self.n_events_per_rank[-1]}" },
+            requests.post(update_url, json=[{ "key": "experiment_name", "value": "mfxp22820"},
+                                            { "key": "Number of events processed", "value": f"{self.n_events_per_rank[-1]}" },
                                             { "key": "Number of hits found", "value": f"{self.n_hits_total}"},
                                             { "key": "Fractional hit rate", "value": f"{(self.n_hits_total/self.n_events_per_rank[-1]):.2f}"}, ])
 
