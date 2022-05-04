@@ -6,7 +6,7 @@ class Indexer:
     
     """ Index cxi files using indexamajig: https://www.desy.de/~twhite/crystfel/manual-indexamajig.html """
 
-    def __init__(self, exp, run, det_type, tag, taskdir, geom, cell, int_rad='4,5,6', methods='mosflm',
+    def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
                  tolerance='5,5,5,1.5', no_revalidate=True, multi=True, profile=True):
         
         # general paramters
@@ -63,7 +63,8 @@ class Indexer:
         Write an indexing executable for submission to slurm.
         """     
         if self.rank == 0:
-            command=f"indexamajig -i {self.lst} -o {self.stream} -j {self.nproc} -g {self.geom} --peaks=cxi --int-rad={self.rad} --indexing={self.methods} --pdb={self.cell} --tolerance={self.tolerance}"
+            command=f"indexamajig -i {self.lst} -o {self.stream} -j {self.nproc} -g {self.geom} --peaks=cxi --int-rad={self.rad} --indexing={self.methods} --tolerance={self.tolerance}"
+            if self.cell is not None: command += f' --pdb={self.cell}'
             if self.no_revalidate: command += ' --no-revalidate'
             if self.multi: command += ' --multi'
             if self.profile: command += ' --profile'
@@ -83,7 +84,7 @@ def parse_input():
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M', required=True, type=str)
     parser.add_argument('--taskdir', help='Base directory for indexing results', required=True, type=str)
     parser.add_argument('--geom', help='CrystFEL-style geom file', required=True, type=str)
-    parser.add_argument('--cell', help='File containing unit cell information (.pdb or .cell)', required=True, type=str)
+    parser.add_argument('--cell', help='File containing unit cell information (.pdb or .cell)', required=False, type=str)
     parser.add_argument('--int_rad', help='Integration radii for peak, buffer and background regions', required=False, type=str, default='4,5,6')
     parser.add_argument('--methods', help='Indexing methods', required=False, type=str, default='xgandalf,mosflm,xds')
     parser.add_argument('--tolerance', help='Tolerances for unit cell comparison: a,b,c,ang', required=False, type=str, default='5,5,5,1.5')

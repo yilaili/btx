@@ -1,8 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.colors as colors
-from matplotlib.colors import LogNorm
+import sys
 from btx.diagnostics.run import RunDiagnostics
 from btx.interfaces.psana_interface import assemble_image_stack_batch
 from .ag_behenate import *
