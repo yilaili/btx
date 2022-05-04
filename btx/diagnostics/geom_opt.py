@@ -21,7 +21,7 @@ class GeomOpt:
         powder : str or int
             if str, path to the powder diffraction in .npy format
             if int, number of images from which to compute powder 
-        sampe : str
+        sample : str
             sample type, currently implemented for AgBehenate only
         center : tuple
             detector center (xc,yc) in pixels. if None, assume assembled image center.
