@@ -53,7 +53,6 @@ class GeomOpt:
             mask = np.load(mask)
             if self.diagnostics.psi.det_type != 'Rayonix':
                 mask = assemble_image_stack_batch(mask, self.diagnostics.pixel_index_map)
-            powder_img *= mask
 
         if sample == 'AgBehenate':
             ag_behenate = AgBehenate()
@@ -61,6 +60,7 @@ class GeomOpt:
                                                 self.diagnostics.psi.estimate_distance(),
                                                 self.diagnostics.psi.get_pixel_size(), 
                                                 self.diagnostics.psi.get_wavelength(),
+                                                mask=mask,
                                                 center=center,
                                                 plot=plot)
             return distance
