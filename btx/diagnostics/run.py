@@ -138,6 +138,12 @@ class RunDiagnostics:
         start_idx, end_idx = self.psi.counter, self.psi.max_events
         self.n_proc, n_empty, n_excluded = 0, 0, 0
 
+        if self.psi.det_type == 'Rayonix':
+            if self.rank == 0:
+                if self.check_first_evt(mask=mask):
+                    print("First image of the run is an outlier and will be excluded")
+                    start_idx += 1
+
         for idx in np.arange(start_idx, end_idx):
 
             # retrieve calibrated image
@@ -228,6 +234,38 @@ class RunDiagnostics:
             if output is not None:
                 f.savefig(output, dpi=300)
     
+    def check_first_evt(self, mask=None, scale_factor=5, n_images=5):
+        """
+        Check whether the first event of the run should be excluded; it's 
+        considered an outlier if mean_0 > < mean_n + scale_factor * std_n >
+        where n ranges from [1,n_images).
+
+        Parameters
+        ----------
+        mask : np.ndarray, shape (n_panels, n_x, n_y)
+            binary mask file or array in unassembled psana shape, optional 
+        scale_factor : float
+            parameter that tunes  how conservative outlier rejection is
+        n_images : int
+            number of total images to compare, including first
+
+        Returns:
+        --------
+        exclude : bool
+            if True, first event was detected as an outlier
+        """
+        exclude = False
+        means, stds = np.zeros(n_images), np.zeros(n_images)
+        for cidx in range(n_images):
+            evt = self.psi.runner.event(self.psi.times[cidx])
+            img = self.psi.det.calib(evt=evt)
+            if mask is not None:
+                img *= mask
+            means[cidx], stds[cidx] = np.mean(img), np.std(img)
+            
+        if means[0] > np.mean(means[1:] + scale_factor * stds[1:]):
+            exclude = True
+        return exclude
 
 #### For command line use ####
             
