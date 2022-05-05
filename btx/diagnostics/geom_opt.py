@@ -11,7 +11,7 @@ class GeomOpt:
                                           run=run, # run number, int
                                           det_type=det_type) # detector name, str
         
-    def opt_distance(self, powder, sample='AgBehenate', center=None, plot=None):
+    def opt_distance(self, powder, sample='AgBehenate', mask=None, center=None, plot=None):
         """
         Estimate the sample-detector distance based on the properties of the powder
         diffraction image. Currently only implemented for silver behenate.
@@ -23,6 +23,8 @@ class GeomOpt:
             if int, number of images from which to compute powder 
         sample : str
             sample type, currently implemented for AgBehenate only
+        mask : str
+            npy file of mask in psana unassembled detector shape
         center : tuple
             detector center (xc,yc) in pixels. if None, assume assembled image center.
         plot : str or None
@@ -39,12 +41,20 @@ class GeomOpt:
         elif type(powder) == int:
             print("Computing powder from scratch")
             self.diagnostics.compute_run_stats(n_images=powder, powder_only=True)
-            powder_img = assemble_image_stack_batch(self.diagnostics.powders['max'], 
-                                                    self.diagnostics.pixel_index_map)
+            if self.diagnostics.psi.det_type != 'Rayonix':
+                powder_img = assemble_image_stack_batch(self.diagnostics.powders['max'], 
+                                                        self.diagnostics.pixel_index_map)
         
         else:
             sys.exit("Unrecognized powder type, expected a path or number")
         
+        if mask:
+            print(f"Applying mask {mask} to powder")
+            mask = np.load(mask)
+            if self.diagnostics.psi.det_type != 'Rayonix':
+                mask = assemble_image_stack_batch(mask, self.diagnostics.pixel_index_map)
+            powder_img *= mask
+
         if sample == 'AgBehenate':
             ag_behenate = AgBehenate()
             distance = ag_behenate.opt_distance(powder_img,
