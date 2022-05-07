@@ -1,6 +1,28 @@
 import numpy as np
 from scipy.signal import sosfiltfilt, butter
 
+def get_radius_map(shape, center=None):
+    """
+    Compute each pixel's radius for an array with input shape and center.
+    
+    Parameters
+    ----------
+    shape : tuple, 2d
+        dimensions of array
+    center : 2d tuple or array                                                                                                                                                                                     
+        (cx,cy) detector center in pixels; if None, choose image center     
+        
+    Returns
+    -------
+    r : numpy.ndarray, with input shape
+        map of pixels' radii
+    """
+    y, x = np.indices(shape)
+    if center is None:
+        center = (int(shape[1]/2), int(shape[0]/2))
+    r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+    return r
+
 def radial_profile(data, center=None, mask=None, 
                    filter=False, filter_order=2, filter_threshold=0.25,
                    threshold=10):
@@ -29,10 +51,9 @@ def radial_profile(data, center=None, mask=None,
     radialprofile : numpy.ndarray, 1d
         radial intensity profile of input image
     """
-    y, x = np.indices((data.shape))
     if center is None:
         center = (int(data.shape[1]/2), int(data.shape[0]/2))
-    r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+    r = get_radius_map(data.shape, center=center)
     if mask is not None:
         r = np.where(mask==1, r, 0)
     r = r.astype(np.int32)
