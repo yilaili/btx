@@ -113,7 +113,7 @@ class RunDiagnostics:
                 #self.stats_final[key] = np.array(self.stats_final[key]).reshape(-1)
                 self.stats_final[key] = np.hstack(self.stats_final[key])
 
-    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False):
+    def compute_run_stats(self, max_events=-1, mask=None, powder_only=False, threshold=None):
         """
         Compute powders and per-image statistics. If a mask is provided, it is 
         only applied to the stats trajectories, not in computing the powder.
@@ -126,6 +126,8 @@ class RunDiagnostics:
             binary mask file or array in unassembled psana shape, optional 
         powder_only : bool
             if True, only compute the powder pattern
+        threshold : float
+            if supplied, exclude events whose mean is above this value
         """
         if mask is not None:
             if type(mask) == str:
@@ -134,7 +136,13 @@ class RunDiagnostics:
 
         self.psi.distribute_events(self.rank, self.size, max_events=max_events)
         start_idx, end_idx = self.psi.counter, self.psi.max_events
-        self.n_proc, n_empty = 0, 0 
+        self.n_proc, n_empty, n_excluded = 0, 0, 0
+
+        if self.psi.det_type == 'Rayonix':
+            if self.rank == 0:
+                if self.check_first_evt(mask=mask):
+                    print("First image of the run is an outlier and will be excluded")
+                    start_idx += 1
 
         for idx in np.arange(start_idx, end_idx):
 
@@ -145,6 +153,12 @@ class RunDiagnostics:
             if img is None:
                 n_empty += 1
                 continue
+                
+            if threshold:
+                if np.mean(img) > threshold:
+                    print(f"Excluding event {idx} with image mean: {np.mean(img)}")
+                    n_excluded += 1
+                    continue
 
             self.compute_base_powders(img)
             if not powder_only:
@@ -153,14 +167,14 @@ class RunDiagnostics:
                 self.compute_stats(img)
 
             self.n_proc += 1
-            if self.psi.counter + n_empty == self.psi.max_events:
+            if self.psi.counter + n_empty + n_excluded == self.psi.max_events:
                 break
 
         self.comm.Barrier()
         self.finalize_powders()
         if not powder_only:
-            self.finalize_stats(n_empty)
-            print(f"Rank {self.rank}, no. empty images: {n_empty}")
+            self.finalize_stats(n_empty + n_excluded)
+            print(f"Rank {self.rank}, no. empty images: {n_empty}, no. excluded images: {n_excluded}")
 
     def visualize_powder(self, tag='max', vmin=-1e5, vmax=1e5, output=None, figsize=12, dpi=300):
         """
@@ -220,6 +234,38 @@ class RunDiagnostics:
             if output is not None:
                 f.savefig(output, dpi=300)
     
+    def check_first_evt(self, mask=None, scale_factor=5, n_images=5):
+        """
+        Check whether the first event of the run should be excluded; it's 
+        considered an outlier if mean_0 > < mean_n + scale_factor * std_n >
+        where n ranges from [1,n_images).
+
+        Parameters
+        ----------
+        mask : np.ndarray, shape (n_panels, n_x, n_y)
+            binary mask file or array in unassembled psana shape, optional 
+        scale_factor : float
+            parameter that tunes  how conservative outlier rejection is
+        n_images : int
+            number of total images to compare, including first
+
+        Returns:
+        --------
+        exclude : bool
+            if True, first event was detected as an outlier
+        """
+        exclude = False
+        means, stds = np.zeros(n_images), np.zeros(n_images)
+        for cidx in range(n_images):
+            evt = self.psi.runner.event(self.psi.times[cidx])
+            img = self.psi.det.calib(evt=evt)
+            if mask is not None:
+                img *= mask
+            means[cidx], stds[cidx] = np.mean(img), np.std(img)
+            
+        if means[0] > np.mean(means[1:] + scale_factor * stds[1:]):
+            exclude = True
+        return exclude
 
 #### For command line use ####
             
@@ -234,6 +280,7 @@ def parse_input():
     parser.add_argument('-o', '--outdir', help='Output directory for powders and plots', required=True, type=str)
     parser.add_argument('-m', '--mask', help='Binary mask for computing trajectories', required=False, type=str)
     parser.add_argument('--max_events', help='Number of images to process, -1 for full run', required=False, default=-1, type=int)
+    parser.add_argument('--mean_threshold', help='Exclude images with a mean above this threshold', required=False, type=float)
 
     return parser.parse_args()
 
@@ -241,7 +288,7 @@ if __name__ == '__main__':
     
     params = parse_input()
     rd = RunDiagnostics(exp=params.exp, run=params.run, det_type=params.det_type) 
-    rd.compute_run_stats(max_events=params.max_events, mask=params.mask) 
+    rd.compute_run_stats(max_events=params.max_events, mask=params.mask, threshold=mean_threshold) 
     rd.save_powders(params.outdir)
     rd.visualize_powder(output=os.path.join(params.outdir, f"powder_r{rd.psi.run:04}.png"))
     rd.visualize_stats(output=os.path.join(params.outdir, f"stats_r{rd.psi.run:04}.png"))

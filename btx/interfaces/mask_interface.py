@@ -49,9 +49,9 @@ class MaskInterface:
         n_edge : int
             depth of border in pixels to mask for each panel
         """
-        # retrieve n_images random events
+        # retrieve random events, excluding first of run due to Rayonix oddity
         imgs = np.zeros((n_images,) + self.psi.det.shape())
-        indices = np.random.randint(0, high=self.psi.max_events, size=n_images)
+        indices = np.random.randint(1, high=self.psi.max_events, size=n_images)
         for i,idx in enumerate(indices):
             evt = self.psi.runner.event(self.psi.times[idx])
             imgs[i] = self.psi.det.calib(evt=evt)

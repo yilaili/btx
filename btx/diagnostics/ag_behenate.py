@@ -58,7 +58,7 @@ class AgBehenate:
         print("Detector distance inferred from powder rings: %s mm" % (np.round(distance,2)))
         return distance
     
-    def opt_distance(self, powder, est_distance, pixel_size, wavelength, center=None, plot=None):
+    def opt_distance(self, powder, est_distance, pixel_size, wavelength, mask=None, center=None, plot=None):
         """
         Optimize the sample-detector distance based on the powder image.
         
@@ -72,6 +72,8 @@ class AgBehenate:
             detector pixel size in mm
         wavelength : float
             beam wavelength in Angstrom
+        mask : numpy.ndarray, 2d
+            binary mask in shape of powder image
         center : tuple
             detector center (xc,yc) in pixels
         plot : str or None
@@ -88,7 +90,7 @@ class AgBehenate:
             center = (int(powder.shape[1]/2), int(powder.shape[0]/2))
         
         # determine peaks in radial intensity profile and associated positions in q
-        iprofile = radial_profile(powder, center=center)
+        iprofile = radial_profile(powder, center=center, mask=mask)
         peaks_observed, properties = find_peaks(iprofile, prominence=1, distance=10)
         qprofile = pix2q(np.arange(iprofile.shape[0]), wavelength, est_distance, pixel_size)
         
@@ -98,7 +100,7 @@ class AgBehenate:
         opt_distance = self.detector_distance(peaks_predicted[0], wavelength, pixel_size)
         
         if plot is not None:
-            self.visualize_results(powder, center=center, 
+            self.visualize_results(powder, mask=mask, center=center, 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
                                    radialprofile=iprofile, qprofile=qprofile, plot=plot)

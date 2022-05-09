@@ -75,7 +75,7 @@ def run_analysis(config):
                         run=setup.run,
                         det_type=setup.det_type)
     logger.debug(f'Computing Powder for run {setup.run} of {setup.exp}...')
-    rd.compute_run_stats(max_events=task.max_events, mask=mask_file)
+    rd.compute_run_stats(max_events=task.max_events, mask=mask_file, threshold=task.get('mean_threshold'))
     logger.info(f'Saving Powders and plots to {taskdir}')
     rd.save_powders(taskdir)
     rd.visualize_powder(output=os.path.join(taskdir, f"figs/powder_r{rd.psi.run:04}.png"))
@@ -96,9 +96,11 @@ def opt_distance(config):
                        run=setup.run,
                        det_type=setup.det_type)
     task.center = tuple([float(elem) for elem in task.center.split()])
+    mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
     dist = geom_opt.opt_distance(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
                                  center=task.center,
+                                 mask=mask_file,
                                  plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
     logger.info(f'Detector distance inferred from powder rings: {dist} mm')
     geom_in = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
