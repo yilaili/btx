@@ -37,10 +37,16 @@ class StreamInterface:
         input_sel = self.distribute_streams(input_files) 
         if len(input_sel) != 0:
             for ifile in input_sel:
-                stream_data_rank.append(self.read_stream(ifile))
+                single_stream_data = self.read_stream(ifile)
+                if len(single_stream_data) == 0: # no crystals in stream file
+                    if self.cell_only: 
+                        single_stream_data = np.empty((0,8))
+                    else: 
+                        single_stream_data = np.empty((0,16))
+                stream_data_rank.append(single_stream_data)
             file_limits_rank = np.array([sdr.shape[0] for sdr in stream_data_rank])
             stream_data_rank = np.vstack(stream_data_rank)  
-        else:
+        else: # no files assigned to this rank
             if self.cell_only:
                 stream_data_rank = np.empty((0,8))
             else:
@@ -144,7 +150,7 @@ class StreamInterface:
         single_stream_data = np.array(single_stream_data)
         if not self.cell_only:
             if len(single_stream_data) == 0:
-                print("Warning: no indexed reflections found!")
+                print(f"Warning: no indexed reflections found in {input_file}!")
             else:
                 single_stream_data[:,-1] = compute_resolution(single_stream_data[:,2:8], single_stream_data[:,8:11])
                 
