@@ -11,7 +11,8 @@ class StreamInterface:
     
     def __init__(self, input_files, cell_only=False):
         self.cell_only = cell_only # bool, if True only extract unit cell params
-        self.stream_data = self.read_all_streams(input_files)
+        self.input_files = input_files # list of stream file(s)
+        self.stream_data, self.file_limits = self.read_all_streams(self.input_files)
     
     def read_all_streams(self, input_files):
         """
@@ -28,25 +29,38 @@ class StreamInterface:
         stream_data : numpy.ndarray, shape (n_refl,16) or (n_refl,8)
             [crystal_num,a,b,c,alpha,beta,gamma,h,k,l,I,sigma(I),peak,background,res]
             or [crystal_num,a,b,c,alpha,beta,gamma] if self.cell_only=False        
+        file_limits : numpy.ndarray, shape (n_files)
+            indices of stream_data's first dimension that indicate start/end of each file
         """
         # processing all files given to each rank
         stream_data_rank = []
         input_sel = self.distribute_streams(input_files) 
         if len(input_sel) != 0:
             for ifile in input_sel:
-                stream_data_rank.append(self.read_stream(ifile))
+                single_stream_data = self.read_stream(ifile)
+                if len(single_stream_data) == 0: # no crystals in stream file
+                    if self.cell_only: 
+                        single_stream_data = np.empty((0,8))
+                    else: 
+                        single_stream_data = np.empty((0,16))
+                stream_data_rank.append(single_stream_data)
+            file_limits_rank = np.array([sdr.shape[0] for sdr in stream_data_rank])
             stream_data_rank = np.vstack(stream_data_rank)  
-        else:
+        else: # no files assigned to this rank
             if self.cell_only:
                 stream_data_rank = np.empty((0,8))
             else:
                 stream_data_rank = np.empty((0,16))
+            file_limits_rank = np.empty(0)
         
         # amassing files from different ranks
         stream_data = self.comm.gather(stream_data_rank, root=0)
+        file_limits = self.comm.gather(file_limits_rank, root=0)
         if self.rank == 0:
             stream_data = np.vstack(stream_data)
-        return stream_data
+            file_limits = np.concatenate(file_limits)
+            file_limits = np.append(np.array([0]), np.cumsum(file_limits))
+        return stream_data, file_limits
         
     def distribute_streams(self, input_files):
         """
@@ -136,7 +150,7 @@ class StreamInterface:
         single_stream_data = np.array(single_stream_data)
         if not self.cell_only:
             if len(single_stream_data) == 0:
-                print("Warning: no indexed reflections found!")
+                print(f"Warning: no indexed reflections found in {input_file}!")
             else:
                 single_stream_data[:,-1] = compute_resolution(single_stream_data[:,2:8], single_stream_data[:,8:11])
                 
@@ -233,8 +247,6 @@ class StreamInterface:
         
         if output is not None:
             fig.savefig(output, dpi=300)
-        
-        return
     
     def plot_cell_parameters(self, output=None):
         """
@@ -268,25 +280,25 @@ class StreamInterface:
         
         if output is not None:
             f.savefig(output, dpi=300)
-        
-        return
     
-    def write_stream(self, indices, output):
+    def copy_from_stream(self, stream_file, indices, indices_chunks, output):
         """
-        Write a new stream file from a selection of crystals or reflections of
-        the original stream file.
+        Add the indicated crystals from the input to the output stream.
         
         Parameters
         ----------
+        stream_file : str
+            input stream file
         indices : numpy.ndarray, 1d
-            indices of self.stream_data to retain
+            indices of reflections (or crystals if self.cell_only) to retain
+        indices_chunks : numpy.ndarray, 1d
+            indices of chunks (crystals) to retain
         output : string
             path to output .stream file     
         """
-        indices_chunks = np.unique(self.stream_data[:,0][indices])
 
         f_out = open(output, "a")
-        f_in = open(self.stream_file)
+        f_in = open(stream_file)
         
         n_chunk = -1
         hkl_counter = -1
@@ -332,8 +344,27 @@ class StreamInterface:
         f_in.close()
         f_out.close()
         
-        return
-
+    def write_stream(self, all_indices, output):
+        """
+        Write a new stream file from a selection of crystals or reflections of
+        the original stream file(s).
+        
+        Parameters
+        ----------
+        all_indices : numpy.ndarray, 1d
+            indices of self.stream_data to retain
+        output : string
+            path to output .stream file     
+        """
+        for nf,infile in enumerate(self.input_files):
+            lower, upper = self.file_limits[nf], self.file_limits[nf+1]
+            idx = np.where((all_indices>=lower) & (all_indices<upper))[0]
+            sel_indices = all_indices[idx] - lower
+            if len(sel_indices) > 0:
+                print(f"Copying {len(sel_indices)} chunks (or reflections) from file {infile}")
+                sel_chunks = np.unique(self.stream_data[all_indices[idx]][:,0]).astype(int)
+                self.copy_from_stream(infile, sel_indices, sel_chunks, output)
+                
 #### For command line use ####
             
 def parse_input():
@@ -348,7 +379,7 @@ def parse_input():
     return parser.parse_args()
 
 if __name__ == '__main__':
-    
+
     params = parse_input()
     st = StreamInterface(input_files=glob.glob(params.inputs), cell_only=params.cell_only)
     if st.rank == 0:

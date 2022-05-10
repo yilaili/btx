@@ -155,14 +155,18 @@ def stream_analysis(config):
     from btx.interfaces.stream_interface import StreamInterface
     setup = config.setup
     task = config.stream_analysis
-    """ Diagnostics including cell distribution and peakogram. """
+    """ Diagnostics including cell distribution and peakogram. Concatenate streams. """
     taskdir = os.path.join(setup.root_dir, 'index')
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
-    stream_files = glob.glob(os.path.join(taskdir, f"r*{task.tag}.stream"))
-    st = StreamInterface(input_files=stream_files, cell_only=False)
+    stream_files = os.path.join(taskdir, f"r*{task.tag}.stream")
+    st = StreamInterface(input_files=glob.glob(stream_files), cell_only=False)
     if st.rank == 0:
         logger.debug(f'Read stream files: {stream_files}')
         st.plot_cell_parameters(output=os.path.join(taskdir, f"figs/cell_{task.tag}.png"))
         st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
         logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
-    logger.debug('Done!')
+        logger.info(f'Input stream files: {stream_files}')
+        logger.info(f'Concatenating all stream files to {task.tag}.stream')
+        stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
+        os.system(f"cat {stream_files} >> {stream_cat}")
+        logger.debug('Done!')
