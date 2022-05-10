@@ -1,5 +1,5 @@
 import numpy as np
-from btx.misc.radial import radial_profile, q2pix, pix2q
+from btx.misc.radial import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
@@ -7,9 +7,33 @@ from matplotlib.colors import LogNorm
 
 class AgBehenate:
     
-    def __init__(self):
+    """
+    Class for optimizing geometry (distance to detector and center) from a silver 
+    behenate powder, leveraging the fact that the peaks are equidistant in q-space.
+    """
+    
+    def __init__(self, powder, mask, pixel_size, wavelength):
+        """
+        Instantiate object.
+                
+        Parameters
+        ----------
+        powder : numpy.ndarray, 2d
+            powder diffraction image, in shape of assembled detector
+        mask : numpy.ndarray, 2d
+            binary mask in shape of powder image
+        pixel_size : float
+            detector pixel size in mm
+        wavelength : float
+            beam wavelength in Angstrom
+        """
         self.q0 = 0.1076 # |q| of first peak in Angstrom
-        self.delta_qs = np.arange(0.015,0.05,0.00005) # q-spacings to scan over, better in log space?
+        self.delta_qs = np.arange(0.015,0.05,0.00005) # q-spacings to scan over
+        self.powder = powder
+        self.mask = mask
+        self.pixel_size = pixel_size
+        self.wavelength = wavelength
+        self.centers, self.distances = [], []
         
     def ideal_rings(self, qPeaks):
         """
@@ -40,7 +64,7 @@ class AgBehenate:
         rings = np.arange(deltaq_current, deltaq_current*(order_max+1), deltaq_current)
         return rings, np.array(scores)
 
-    def detector_distance(self, est_q0, wavelength, pixel_size):
+    def detector_distance(self, est_q0):
         """
         Estimate the sample-detector distance, based on the fact that the 
         first diffraction ring for silver behenate is at 0.1076/Angstrom. 
@@ -49,63 +73,110 @@ class AgBehenate:
         ----------
         est_q0 : float
             predicted q-position of first ring based on the best fit q-spacing in Angstrom
-        wavelength : float
-            beam wavelength in Angstrom
-        pixel_size : float
-            detector pixel size in mm
+
+        Returns
+        -------
+        distance : float
+            refined detector distance in mm
         """
-        distance = est_q0*pixel_size/np.tan(2.*np.arcsin(wavelength*(self.q0/(2*np.pi))/2))
+        distance = est_q0 * self.pixel_size / np.tan(2. * np.arcsin(self.wavelength * (self.q0 / (2*np.pi))/2))
         print("Detector distance inferred from powder rings: %s mm" % (np.round(distance,2)))
         return distance
     
-    def opt_distance(self, powder, est_distance, pixel_size, wavelength, mask=None, center=None, plot=None):
+    def opt_distance(self, plot=None):
         """
         Optimize the sample-detector distance based on the powder image.
         
         Parameters
         ----------
-        powder : numpy.ndarray, 2d
-            powder diffraction image, in shape of assembled detector
-        est_distance : float
-            estimated sample-detector distance in mm
-        pixel_size : float
-            detector pixel size in mm
-        wavelength : float
-            beam wavelength in Angstrom
-        mask : numpy.ndarray, 2d
-            binary mask in shape of powder image
-        center : tuple
-            detector center (xc,yc) in pixels
         plot : str or None
             output path for figure; if '', plot but don't save; if None, don't plot
         
         Returns
         -------
-        opt_distance : float
-            optimized sample-detector distance in mm
+        peaks_observed : numpy.ndarray, 1d
+            radii of detected powder peaks in pixels
         """
         from scipy.signal import find_peaks
-
-        if center is None:
-            center = (int(powder.shape[1]/2), int(powder.shape[0]/2))
         
         # determine peaks in radial intensity profile and associated positions in q
-        iprofile = radial_profile(powder, center=center, mask=mask)
+        iprofile = radial_profile(self.powder, center=self.centers[-1], mask=self.mask)
         peaks_observed, properties = find_peaks(iprofile, prominence=1, distance=10)
-        qprofile = pix2q(np.arange(iprofile.shape[0]), wavelength, est_distance, pixel_size)
+        qprofile = pix2q(np.arange(iprofile.shape[0]), self.wavelength, self.distances[-1], self.pixel_size)
         
         # optimize the detector distance based on inter-peak distances
         rings, scores = self.ideal_rings(qprofile[peaks_observed])
-        peaks_predicted = q2pix(rings, wavelength, est_distance, pixel_size)
-        opt_distance = self.detector_distance(peaks_predicted[0], wavelength, pixel_size)
+        peaks_predicted = q2pix(rings, self.wavelength, self.distances[-1], self.pixel_size)
+        opt_distance = self.detector_distance(peaks_predicted[0])
         
         if plot is not None:
-            self.visualize_results(powder, mask=mask, center=center, 
+            self.visualize_results(powder, mask=mask, center=self.centers[-1], 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
                                    radialprofile=iprofile, qprofile=qprofile, plot=plot)
         
-        return opt_distance
+        self.distances.append(opt_distance)
+        return peaks_observed
+    
+    def opt_center(self, peaks_observed):
+        """
+        Optimize the detector center by fitting circles to pixels predicted
+        to fall in the powder rings.
+
+        Parameters
+        ----------
+        peaks_observed : numpy.ndarray, 1d
+            radii of detected powder peaks in pixels
+        """
+        # Create a concentric circle model...
+        cx, cy = center
+        r = peaks_observed
+        num = 200
+        model = OptimizeConcentricCircles(cx = cx, cy = cy, r = r, num = num)
+        model.generate_crds()
+        crds_init = model.crds.copy()
+        crds_init = crds_init.reshape(2, -1, num)
+
+        # Fitting...
+        img = (powder - np.mean(powder)) / np.std(powder)
+        res = model.fit(img)
+        model.report_fit(res)
+        crds = model.crds
+        crds = crds.reshape(2, -1, num)
+
+        # Update the center position...
+        cx = res.params['cx'].value
+        cy = res.params['cy'].value
+        center = (cx, cy)
+        self.centers.append(center)
+        
+        print(f"New center is {(self.centers[-1][0], self.centers[-1][1])}")
+        
+    def opt_geom(self, distance_i, n_iterations=3, center_i=None, plot=None):
+        """
+        Optimize the detector geometry, sequentially refining the distance and center
+        in an iterative fashion.
+        
+        Parameters
+        ----------
+        n_iterations : int
+            number of refinement steps
+        center_i : tuple, 2d
+            initial estimate of detector center in pixels
+        distance_i : float
+            initial estimate of the sample-detector distance in mm
+        plot : str or None
+            if a legitimate path, save plot; if empty str, display plot; if None, don't plot
+        """
+        self.distances.append(distance_i)
+        if center_i is None:
+            self.centers.append((int(powder.shape[1]/2), int(powder.shape[0]/2)))
+        else:
+            self.centers.append(center_i)
+            
+        for niter in range(n_iterations):
+            peaks_pred, peaks_obs = self.opt_distance(plot=plot)
+            self.opt_center(peaks_pred, peaks_obs)
     
     def visualize_results(self, image, mask=None, vmax=None,
                           center=None, peaks_predicted=None, peaks_observed=None,
