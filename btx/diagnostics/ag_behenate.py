@@ -186,11 +186,11 @@ class AgBehenate:
             self.powder[self.powder>threshold] = 0
             
         # iterate over distance and center estimation
-        peaks_obs, peak_vals = self.opt_distance(plot=None)
+        peaks_obs, peak_vals = self.opt_distance(plot=plot)
         for niter in range(n_iterations):
             peaks_obs_sel = peaks_obs[np.argsort(peak_vals[:8])[::-1][:n_peaks]] # highest intensity peaks from first 8 in q.
             self.opt_center(peaks_obs_sel)
-            peaks_obs, peak_vals = self.opt_distance(plot='')
+            peaks_obs, peak_vals = self.opt_distance(plot=plot)
     
     def visualize_results(self, image, mask=None, vmax=None,
                           center=None, peaks_predicted=None, peaks_observed=None,
