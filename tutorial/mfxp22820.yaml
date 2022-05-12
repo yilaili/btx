@@ -1,5 +1,5 @@
 setup:
-  root_dir: '/cds/data/psdm/mfx/mfxp22820/scratch/btx'
+  root_dir: '/cds/data/drpsrcf/mfx/mfxp22820/scratch/btx'
   exp: 'mfxp22820'
   run: 57
   det_type: 'Rayonix'
