@@ -42,7 +42,7 @@ index:
   tag: 'sample1'
   int_radius: '3,4,5'
   methods: 'mosflm'
-  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/btx/sample.cell'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/btx_elog/cco_ox-pre.cell'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True
