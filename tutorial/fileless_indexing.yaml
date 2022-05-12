@@ -1,5 +1,0 @@
-launch_cheetah:
-  config_path: 'monitor.yaml'
-  node_pool_size: 8
-
-launch_crystfel:
