@@ -1,8 +1,10 @@
 import numpy as np
 import sys
+import requests
 from btx.diagnostics.run import RunDiagnostics
 from btx.interfaces.psana_interface import assemble_image_stack_batch
 from btx.misc.metrology import *
+from btx.misc.radial import pix2q
 from .ag_behenate import *
 
 class GeomOpt:
@@ -13,6 +15,7 @@ class GeomOpt:
                                           det_type=det_type) # detector name, str
         self.center = None
         self.distance = None
+        self.edge_resolution = None
 
     def opt_geom(self, powder, sample='AgBehenate', mask=None, center=None, 
                  n_iterations=5, n_peaks=3, threshold=1e6, plot=None):
@@ -77,6 +80,10 @@ class GeomOpt:
                                  plot=plot)
             self.distance = ag_behenate.distances[-1] # in mm
             self.center = ag_behenate.centers[-1] # in pixels
+            self.edge_resolution = 1.0 / pix2q(np.array([powder_img.shape[0]/2]), 
+                                               self.diagnostics.psi.get_wavelength(), 
+                                               self.distance, 
+                                               self.diagnostics.psi.get_pixel_size())[0] # in Angstrom
 
         else:
             print("Sorry, currently only implemented for silver behenate")
@@ -117,3 +124,16 @@ class GeomOpt:
         generate_geom_file(self.diagnostics.psi.exp, run, self.diagnostics.psi.det_type, psana_file, temp_file)
         modify_crystfel_header(temp_file, crystfel_file)
         os.remove(temp_file)
+
+    def report(self, update_url):
+        """
+        Post summary to elog.
+       
+        Parameters
+        ----------
+        update_url : str
+            elog URL for posting progress update
+        """
+        requests.post(update_url, json=[{ "key": "Detector distance (mm)", "value": f"{self.distance}" },
+                                        { "key": "Detector center (pixels)", "value": f"{self.center}" },
+                                        { "key": "Detector edge resolution (A)", "value": f"{self.edge_resolution}" }, ])

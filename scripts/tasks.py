@@ -102,8 +102,13 @@ def opt_geom(config):
                       n_peaks=task.get('n_peaks'), 
                       threshold=task.get('threshold'),
                       plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
+    try:
+        geom_opt.report(update_url)
+    except:
+        logger.debug("Could not communicate with the elog update url")
     logger.info(f'Detector distance in mm inferred from powder rings: {geom_opt.distance}')
     logger.info(f'Detector center in pixels inferred from powder rings: {geom_opt.center}')
+    logger.info(f'Detector edge resolution in Angstroms: {geom_opt.edge_resolution}')    
     geom_opt.deploy_geometry(taskdir)
     logger.info(f'Updated geometry files saved to: {taskdir}')
     logger.debug('Done!')
