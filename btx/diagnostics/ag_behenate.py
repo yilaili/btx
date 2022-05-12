@@ -60,7 +60,7 @@ class AgBehenate:
             remain = np.minimum(qround%dq, np.abs(dq-(qround%dq)))
             score  = np.mean(remain[np.where(order<order_max)])/dq # %mod helps prevent half periods from scoring well
             scores.append(score)
-        deltaq_current = self.delta_qs[np.argmin(scores)] # 
+        deltaq_current = self.delta_qs[np.argmin(scores)] 
         rings = np.arange(deltaq_current, deltaq_current*(order_max+1), deltaq_current)
         return rings, np.array(scores)
 
@@ -96,6 +96,8 @@ class AgBehenate:
         -------
         peaks_observed : numpy.ndarray, 1d
             radii of detected powder peaks in pixels
+        peak_heights : numpy.ndarray, 1d
+            intensities associated with peaks_observed
         """
         from scipy.signal import find_peaks
         
@@ -110,15 +112,15 @@ class AgBehenate:
         opt_distance = self.detector_distance(peaks_predicted[0])
         
         if plot is not None:
-            self.visualize_results(powder, mask=mask, center=self.centers[-1], 
+            self.visualize_results(self.powder, mask=self.mask, center=self.centers[-1], 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
                                    radialprofile=iprofile, qprofile=qprofile, plot=plot)
         
         self.distances.append(opt_distance)
-        return peaks_observed
+        return peaks_observed, iprofile[peaks_observed]
     
-    def opt_center(self, peaks_observed):
+    def opt_center(self, peaks_observed, num=200):
         """
         Optimize the detector center by fitting circles to pixels predicted
         to fall in the powder rings.
@@ -127,18 +129,18 @@ class AgBehenate:
         ----------
         peaks_observed : numpy.ndarray, 1d
             radii of detected powder peaks in pixels
+        num : int
+            number of points per ring to use for fitting
         """
         # Create a concentric circle model...
-        cx, cy = center
-        r = peaks_observed
-        num = 200
-        model = OptimizeConcentricCircles(cx = cx, cy = cy, r = r, num = num)
+        cx, cy = self.centers[-1]
+        model = OptimizeConcentricCircles(cx=cx, cy=cy, r=peaks_observed, num=num)
         model.generate_crds()
         crds_init = model.crds.copy()
         crds_init = crds_init.reshape(2, -1, num)
 
         # Fitting...
-        img = (powder - np.mean(powder)) / np.std(powder)
+        img = (self.powder - np.mean(self.powder)) / np.std(self.powder)
         res = model.fit(img)
         model.report_fit(res)
         crds = model.crds
@@ -149,34 +151,46 @@ class AgBehenate:
         cy = res.params['cy'].value
         center = (cx, cy)
         self.centers.append(center)
-        
+                
         print(f"New center is {(self.centers[-1][0], self.centers[-1][1])}")
         
-    def opt_geom(self, distance_i, n_iterations=3, center_i=None, plot=None):
+    def opt_geom(self, distance_i, n_iterations=5, n_peaks=3, threshold=1e6, center_i=None, plot=None):
         """
         Optimize the detector geometry, sequentially refining the distance and center
         in an iterative fashion.
         
         Parameters
         ----------
-        n_iterations : int
-            number of refinement steps
-        center_i : tuple, 2d
-            initial estimate of detector center in pixels
         distance_i : float
             initial estimate of the sample-detector distance in mm
+        n_iterations : int
+            number of refinement steps
+        n_peaks : int
+            number of observed peaks to use for center fitting
+        threshold : float
+            pixels above this intensity in powder get set to 0; None for no thresholding.
+        center_i : tuple, 2d
+            initial estimate of detector center in pixels
         plot : str or None
             if a legitimate path, save plot; if empty str, display plot; if None, don't plot
         """
+        # store initial distance and center
         self.distances.append(distance_i)
         if center_i is None:
-            self.centers.append((int(powder.shape[1]/2), int(powder.shape[0]/2)))
+            self.centers.append((int(self.powder.shape[1]/2), int(self.powder.shape[0]/2)))
         else:
             self.centers.append(center_i)
+
+        # optionally threshold powder values since some high intensity pixels may escape mask
+        if threshold is not None:
+            self.powder[self.powder>threshold] = 0
             
+        # iterate over distance and center estimation
+        peaks_obs, peak_vals = self.opt_distance(plot=None)
         for niter in range(n_iterations):
-            peaks_pred, peaks_obs = self.opt_distance(plot=plot)
-            self.opt_center(peaks_pred, peaks_obs)
+            peaks_obs_sel = peaks_obs[np.argsort(peak_vals[:8])[::-1][:n_peaks]] # highest intensity peaks from first 8 in q.
+            self.opt_center(peaks_obs_sel)
+            peaks_obs, peak_vals = self.opt_distance(plot='')
     
     def visualize_results(self, image, mask=None, vmax=None,
                           center=None, peaks_predicted=None, peaks_observed=None,
