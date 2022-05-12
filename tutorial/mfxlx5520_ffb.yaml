@@ -1,7 +1,7 @@
 setup:
-  root_dir: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/'
-  exp: 'mfxlv4920'
-  run: 234
+  root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/btx_elog/'
+  exp: 'mfxlx5520'
+  run: 1
   det_type: 'Rayonix'
 
 fetch_mask:
@@ -10,16 +10,18 @@ fetch_mask:
 fetch_geom:
 
 build_mask:
-  thresholds: -10 2000
-  n_images: 10
-  n_edge: 2
+  thresholds: -10 5000
+  n_images: 20
+  n_edge: 1
   combine: True
 
 run_analysis:
   max_events: -1
 
-opt_distance:
-  center: 960 960
+opt_geom:
+  n_iterations: 5
+  n_peaks: 3
+  threshold: 1000000
 
 find_peaks:
   tag: ''
@@ -28,8 +30,8 @@ find_peaks:
   max_peaks: 2048
   npix_min: 2
   npix_max: 30
-  amax_thr: 300.
-  atot_thr: 600.
+  amax_thr: 40.
+  atot_thr: 180.
   son_min: 10.0
   peak_rank: 3
   r0: 3.0
@@ -37,14 +39,14 @@ find_peaks:
   nsigm: 10.0
 
 index:
-  tag: 'test'
-  int_radius: '4,5,6'
+  tag: 'sample1'
+  int_radius: '3,4,5'
   methods: 'mosflm'
-  cell: '/cds/data/psdm/mfx/mfxlv4920/scratch/apeck/cco.cell'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/btx/sample.cell'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True
   profile: True
 
 stream_analysis:
-  tag: 'test'
+  tag: 'sample1'
