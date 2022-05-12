@@ -82,34 +82,30 @@ def run_analysis(config):
     rd.visualize_stats(output=os.path.join(taskdir, f"figs/stats_r{rd.psi.run:04}.png"))
     logger.debug('Done!')
     
-def opt_distance(config):
+def opt_geom(config):
     from btx.diagnostics.geom_opt import GeomOpt
-    from btx.misc.metrology import modify_crystfel_header, generate_geom_file
     from btx.misc.shortcuts import fetch_latest
     setup = config.setup
-    task = config.opt_distance
-    """ Optimize the detector distance from an AgBehenate run. """
+    task = config.opt_geom
+    """ Optimize and deploy the detector geometry from a silver behenate run. """
     taskdir = os.path.join(setup.root_dir, 'geom')
     os.makedirs(taskdir, exist_ok=True)
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
     geom_opt = GeomOpt(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
-    task.center = tuple([float(elem) for elem in task.center.split()])
     mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
-    dist = geom_opt.opt_distance(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
-                                 center=task.center,
-                                 mask=mask_file,
-                                 plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
-    logger.info(f'Detector distance inferred from powder rings: {dist} mm')
-    geom_in = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
-    geom_temp = os.path.join(taskdir, 'temp.geom')
-    geom_out = os.path.join(taskdir, f'r{setup.run:04}.geom')
-    generate_geom_file(setup.exp, setup.run, setup.det_type, geom_in, geom_temp, det_dist=dist)
-    modify_crystfel_header(geom_temp, geom_out)
-    os.remove(geom_temp)
-    logger.info(f'CrystFEL geom file saved with updated coffset value to: {geom_out}')
+    geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
+                      mask=mask_file,
+                      n_iterations=task.get('n_iterations'), 
+                      n_peaks=task.get('n_peaks'), 
+                      threshold=task.get('threshold'),
+                      plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
+    logger.info(f'Detector distance in mm inferred from powder rings: {geom_opt.distance}')
+    logger.info(f'Detector center in pixels inferred from powder rings: {geom_opt.center}')
+    geom_opt.deploy_geometry(taskdir)
+    logger.info(f'Updated geometry files saved to: {taskdir}')
     logger.debug('Done!')
 
 def find_peaks(config):
