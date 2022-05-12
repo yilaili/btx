@@ -1,7 +1,10 @@
 import numpy as np
 import sys
+import requests
 from btx.diagnostics.run import RunDiagnostics
 from btx.interfaces.psana_interface import assemble_image_stack_batch
+from btx.misc.metrology import *
+from btx.misc.radial import pix2q
 from .ag_behenate import *
 
 class GeomOpt:
@@ -10,8 +13,12 @@ class GeomOpt:
         self.diagnostics = RunDiagnostics(exp=exp, # experiment name, str
                                           run=run, # run number, int
                                           det_type=det_type) # detector name, str
-        
-    def opt_distance(self, powder, sample='AgBehenate', mask=None, center=None, plot=None):
+        self.center = None
+        self.distance = None
+        self.edge_resolution = None
+
+    def opt_geom(self, powder, sample='AgBehenate', mask=None, center=None, 
+                 n_iterations=5, n_peaks=3, threshold=1e6, plot=None):
         """
         Estimate the sample-detector distance based on the properties of the powder
         diffraction image. Currently only implemented for silver behenate.
@@ -27,6 +34,12 @@ class GeomOpt:
             npy file of mask in psana unassembled detector shape
         center : tuple
             detector center (xc,yc) in pixels. if None, assume assembled image center.
+        n_iterations : int
+            number of refinement steps
+        n_peaks : int
+            number of observed peaks to use for center fitting
+        threshold : float
+            pixels above this intensity in powder get set to 0; None for no thresholding.
         plot : str or None
             output path for figure; if '', plot but don't save; if None, don't plot
 
@@ -49,22 +62,78 @@ class GeomOpt:
             sys.exit("Unrecognized powder type, expected a path or number")
         
         if mask:
-            print(f"Applying mask {mask} to powder")
+            print(f"Loading mask {mask}")
             mask = np.load(mask)
             if self.diagnostics.psi.det_type != 'Rayonix':
                 mask = assemble_image_stack_batch(mask, self.diagnostics.pixel_index_map)
 
         if sample == 'AgBehenate':
-            ag_behenate = AgBehenate()
-            distance = ag_behenate.opt_distance(powder_img,
-                                                self.diagnostics.psi.estimate_distance(),
-                                                self.diagnostics.psi.get_pixel_size(), 
-                                                self.diagnostics.psi.get_wavelength(),
-                                                mask=mask,
-                                                center=center,
-                                                plot=plot)
-            return distance
+            ag_behenate = AgBehenate(powder_img,
+                                     mask,
+                                     self.diagnostics.psi.get_pixel_size(),
+                                     self.diagnostics.psi.get_wavelength())
+            ag_behenate.opt_geom(self.diagnostics.psi.estimate_distance(), 
+                                 n_iterations=n_iterations, 
+                                 n_peaks=n_peaks, 
+                                 threshold=threshold, 
+                                 center_i=center, 
+                                 plot=plot)
+            self.distance = ag_behenate.distances[-1] # in mm
+            self.center = ag_behenate.centers[-1] # in pixels
+            self.edge_resolution = 1.0 / pix2q(np.array([powder_img.shape[0]/2]), 
+                                               self.diagnostics.psi.get_wavelength(), 
+                                               self.distance, 
+                                               self.diagnostics.psi.get_pixel_size())[0] # in Angstrom
 
         else:
             print("Sorry, currently only implemented for silver behenate")
             return -1
+
+    def deploy_geometry(self, outdir):
+        """
+        Write new geometry files (.geom and .data for CrystFEL and psana respectively) 
+        with the optimized center and distance.
+    
+        Parameters
+        ----------
+        center : tuple
+            optimized center (cx, cy) in pixels
+        distance : float
+            optimized sample-detector distance in mm
+        outdir : str
+            path to output directory
+        """
+        # retrieve original geometry
+        run = self.diagnostics.psi.run
+        geom = self.diagnostics.psi.det.geometry(run)
+        top = geom.get_top_geo()
+        children = top.get_list_of_children()[0]
+        pixel_size = self.diagnostics.psi.get_pixel_size() * 1e3 # from mm to microns
+    
+        # determine and deploy shifts in x,y,z
+        cy, cx = self.diagnostics.psi.det.point_indexes(run, pxy_um=(0,0), fract=True)
+        dx = pixel_size * (self.center[0] - cx) # convert from pixels to microns
+        dy = pixel_size * (self.center[1] - cy) # convert from pixels to microns
+        dz = np.mean(-1*self.diagnostics.psi.det.coords_z(run)) - 1e3 * self.distance # convert from mm to microns
+        geom.move_geo(children.oname, 0, dx=-dy, dy=-dx, dz=dz) 
+    
+        # write optimized geometry files
+        psana_file, crystfel_file = os.path.join(outdir, f"r{run:04}_end.data"), os.path.join(outdir, f"r{run:04}.geom")
+        temp_file = os.path.join(outdir, "temp.geom")
+        geom.save_pars_in_file(psana_file)
+        generate_geom_file(self.diagnostics.psi.exp, run, self.diagnostics.psi.det_type, psana_file, temp_file)
+        modify_crystfel_header(temp_file, crystfel_file)
+        os.remove(temp_file)
+
+    def report(self, update_url):
+        """
+        Post summary to elog.
+       
+        Parameters
+        ----------
+        update_url : str
+            elog URL for posting progress update
+        """
+        requests.post(update_url, json=[{ "key": "Detector distance (mm)", "value": f"{self.distance}" },
+                                        { "key": "Detector center (pixels)", "value": f"{self.center}" },
+                                        { "key": "Detector edge resolution (A)", "value": f"{self.edge_resolution}" }, ])
