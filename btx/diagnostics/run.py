@@ -238,7 +238,8 @@ class RunDiagnostics:
         """
         Check whether the first event of the run should be excluded; it's 
         considered an outlier if mean_0 > < mean_n + scale_factor * std_n >
-        where n ranges from [1,n_images).
+        where n ranges from [1,n_images). If any of the first few events are
+        None, exclude the first image to simplify matters.
 
         Parameters
         ----------
@@ -259,6 +260,8 @@ class RunDiagnostics:
         for cidx in range(n_images):
             evt = self.psi.runner.event(self.psi.times[cidx])
             img = self.psi.det.calib(evt=evt)
+            if img is None:
+                return exclude
             if mask is not None:
                 img *= mask
             means[cidx], stds[cidx] = np.mean(img), np.std(img)
@@ -288,7 +291,7 @@ if __name__ == '__main__':
     
     params = parse_input()
     rd = RunDiagnostics(exp=params.exp, run=params.run, det_type=params.det_type) 
-    rd.compute_run_stats(max_events=params.max_events, mask=params.mask, threshold=mean_threshold) 
+    rd.compute_run_stats(max_events=params.max_events, mask=params.mask, threshold=params.mean_threshold) 
     rd.save_powders(params.outdir)
     rd.visualize_powder(output=os.path.join(params.outdir, f"powder_r{rd.psi.run:04}.png"))
     rd.visualize_stats(output=os.path.join(params.outdir, f"stats_r{rd.psi.run:04}.png"))
