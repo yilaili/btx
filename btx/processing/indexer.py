@@ -84,7 +84,7 @@ def parse_input():
     parser.add_argument('-e', '--exp', help='Experiment name', required=True, type=str)
     parser.add_argument('-r', '--run', help='Run number', required=True, type=int)
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M', required=True, type=str)
-    parser.add_argument('--tag', help='Tag to add to output files', required=False, type=str)
+    parser.add_argument('--tag', help='Suffix extension for stream file', required=True, type=str)
     parser.add_argument('--tag_cxi', help='Tag to identify input CXI files', required=False, type=str)
     parser.add_argument('--taskdir', help='Base directory for indexing results', required=True, type=str)
     parser.add_argument('--geom', help='CrystFEL-style geom file', required=True, type=str)
