@@ -14,9 +14,9 @@ class PsanaInterface:
         self.det_type = det_type # detector name, str
         self.track_timestamps = track_timestamps # bool, keep event info
         self.seconds, self.nanoseconds, self.fiducials = [], [], []
-        self.event_receiver = event_receiver
-        self.event_code = event_code
-        self.event_logic = event_logic
+        self.event_receiver = event_receiver # 'evr0' or 'evr1', str
+        self.event_code = event_code # event code, int
+        self.event_logic = event_logic #
         self.set_up(det_type, ffb_mode)
         self.counter = 0
 

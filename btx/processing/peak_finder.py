@@ -483,6 +483,9 @@ def parse_input():
     parser.add_argument('-o', '--outdir', help='Output directory for cxi files', required=True, type=str)
     parser.add_argument('-t', '--tag', help='Tag to append to cxi file names', required=False, type=str, default='')
     parser.add_argument('-m', '--mask', help='Binary mask', required=False, type=str)
+    parser.add_argument('--event_receiver', help='Event Receiver to be used: evr0 or evr1', required=False, type=str, default='None')
+    parser.add_argument('--event_code', help='Event code', required=False, type=int, default='None')
+    parser.add_argument('--event_logic', help='True if only the event code is processed. False if it is ignored.', type=bool, default=True)
     parser.add_argument('--psana_mask', help='If True, apply mask from psana Detector object', required=False, type=bool, default=True)
     parser.add_argument('--min_peaks', help='Minimum number of peaks per image', required=False, type=int, default=2)
     parser.add_argument('--max_peaks', help='Maximum number of peaks per image', required=False, type=int, default=2048)
@@ -501,7 +504,8 @@ def parse_input():
 if __name__ == '__main__':
     
     params = parse_input()
-    pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, outdir=params.outdir, tag=params.tag,
+    pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, outdir=params.outdir,
+                    event_receiver=None, event_code=None, event_logic=True, tag=params.tag,
                     mask=params.mask, psana_mask=params.psana_mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
                     npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, 
                     son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm)

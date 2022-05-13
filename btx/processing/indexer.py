@@ -84,6 +84,8 @@ def parse_input():
     parser.add_argument('-e', '--exp', help='Experiment name', required=True, type=str)
     parser.add_argument('-r', '--run', help='Run number', required=True, type=int)
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M', required=True, type=str)
+    parser.add_argument('--tag', help='Tag to add to output files', required=False, type=str)
+    parser.add_argument('--tag_cxi', help='Tag to identify input CXI files', required=False, type=str)
     parser.add_argument('--taskdir', help='Base directory for indexing results', required=True, type=str)
     parser.add_argument('--geom', help='CrystFEL-style geom file', required=True, type=str)
     parser.add_argument('--cell', help='File containing unit cell information (.pdb or .cell)', required=False, type=str)
@@ -100,6 +102,6 @@ if __name__ == '__main__':
     
     params = parse_input()
     indexer_obj = Indexer(exp=params.exp, run=params.run, det_type=params.det_type, taskdir=params.taskdir, geom=params.geom, 
-                          cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, 
+                          cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, tag_cxi=params.tag_cxi,
                           no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile)
     indexer_obj.write_exe()
