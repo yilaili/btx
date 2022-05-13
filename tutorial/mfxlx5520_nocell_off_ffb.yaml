@@ -27,7 +27,7 @@ opt_geom:
   threshold: 1000000
 
 find_peaks:
-  tag: 'on'
+  tag: 'off'
   psana_mask: False
   min_peaks: 10
   max_peaks: 2048
@@ -42,8 +42,8 @@ find_peaks:
   nsigm: 10.0
 
 index:
-  tag_cxi: 'on'
-  tag: 'sample1_nocell_on'
+  tag_cxi: 'off'
+  tag: 'sample1_nocell_off'
   int_radius: '3,4,5'
   methods: 'mosflm'
   tolerance: '5,5,5,1.5'
