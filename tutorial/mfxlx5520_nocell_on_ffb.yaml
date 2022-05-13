@@ -4,7 +4,7 @@ setup:
   run: 1
   det_type: 'Rayonix'
   event_receiver: 'evr0'
-  event_code: 203
+  event_code: 205
   event_logic: True
 
 fetch_mask:

@@ -12,7 +12,7 @@ class Indexer:
     """
 
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
-                 tolerance='5,5,5,1.5', tag_cxi='', no_revalidate=True, multi=True, profile=True):
+                 tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True):
         
         # general paramters
         self.exp = exp
@@ -59,8 +59,11 @@ class Indexer:
         tag : str
             filename extension suffix
         """
-        if ( tag_cxi != ''):
-            tag_cxi = '_'+tag_cxi
+        if tag_cxi is not None :
+            if ( tag_cxi != '' ):
+                tag_cxi = '_'+tag_cxi
+        else:
+            tag_cxi = ''
         self.lst = os.path.join(taskdir ,f'r{self.run:04}/r{self.run:04}{tag_cxi}.lst')
         self.stream = os.path.join(taskdir, f'r{self.run:04}_{tag}.stream')
         if "TMP_EXE" in os.environ:
