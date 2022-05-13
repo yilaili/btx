@@ -245,20 +245,19 @@ class PsanaInterface:
                 
             else:
                 evt = self.runner.event(self.times[self.counter])
-                if not self.skip_event(evt):
-                    if assemble:
-                        if not self.calibrate:
-                            raise IOError("Error: calibration data not found for this run.")
-                        else:
-                            images[counter_batch] = self.det.image(evt=evt)
+                if assemble:
+                    if not self.calibrate:
+                        raise IOError("Error: calibration data not found for this run.")
                     else:
-                        if self.calibrate:
-                            images[counter_batch] = self.det.calib(evt=evt)
-                        else:
-                            images[counter_batch] = self.det.raw(evt=evt)
+                        images[counter_batch] = self.det.image(evt=evt)
+                else:
+                    if self.calibrate:
+                        images[counter_batch] = self.det.calib(evt=evt)
+                    else:
+                        images[counter_batch] = self.det.raw(evt=evt)
                         
-                    if self.track_timestamps:
-                        self.get_timestamp(evt.get(EventId))
+                if self.track_timestamps:
+                    self.get_timestamp(evt.get(EventId))
                     
                 self.counter += 1
              
