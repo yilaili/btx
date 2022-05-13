@@ -129,6 +129,7 @@ export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH
 export PYTHONPATH="${PYTHONPATH}:$( dirname -- ${SCRIPT_DIR})"
 export NCORES=${CORES}
 export TMP_EXE=${TMP_EXE}
+export WHICHPYTHON='/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python'
 
 if [ ${RUN_NUM} != 'None' ]; then
   echo "new config file: ${THIS_CONFIGFILE}"

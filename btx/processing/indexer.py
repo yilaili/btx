@@ -18,6 +18,9 @@ class Indexer:
         self.exp = exp
         self.run = run
         self.det_type = det_type
+
+        self.taskdir = taskdir
+        self.tag = tag
         
         # indexing parameters
         self.geom = geom # geometry file in CrystFEL format
@@ -64,7 +67,10 @@ class Indexer:
             self.tmp_exe = os.path.join(taskdir ,f'r{self.run:04}/index_r{self.run:04}.sh')
         self.peakfinding_summary = os.path.join(taskdir ,f'r{self.run:04}/peakfinding.summary')
         self.indexing_summary = os.path.join(taskdir ,f'r{self.run:04}/indexing.summary')
-        
+
+        self.script_path = os.path.abspath(__file__)
+        self.python_path = os.environ['WHICHPYTHON']
+
     def write_exe(self):
         """
         Write an indexing executable for submission to slurm.
@@ -76,9 +82,12 @@ class Indexer:
             if self.multi: command += ' --multi'
             if self.profile: command += ' --profile'
 
+            command_report=f"{self.python_path} {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag}"
+
             with open(self.tmp_exe, 'w') as f:
                 f.write("#!/bin/bash\n")
                 f.write(f"{command}\n")
+                f.write(f"{command_report}\n")
             print(f"Indexing executable written to {self.tmp_exe}")
             
     def report(self, update_url=None):
@@ -111,6 +120,7 @@ class Indexer:
                 f.write(f"Fractional indexing rate rate: {(n_indexed/n_total):.2f}\n")
 
             # post to elog
+            update_url = os.environ.get('JID_UPDATE_COUNTERS')
             if update_url is not None:
                 try:
                     requests.post(update_url, json=[{ "key": "Number of indexed events", "value": f"{n_indexed}"},
