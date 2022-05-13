@@ -171,11 +171,12 @@ class PsanaInterface:
             if True, skip event
         """
         skip = False
-        event_codes = self.evr_det.eventCodes(evt)
-        if self.event_code in event_codes:
-            found_event = True
-        if ( found_event != self.event_logic):
-            skip = True
+        if self.event_receiver is not None:
+            event_codes = self.evr_det.eventCodes(evt)
+            if self.event_code in event_codes:
+                found_event = True
+            if ( found_event != self.event_logic ):
+                skip = True
         return skip
 
     def distribute_events(self, rank, total_ranks, max_events=-1):
