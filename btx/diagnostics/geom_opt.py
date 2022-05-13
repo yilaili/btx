@@ -134,6 +134,6 @@ class GeomOpt:
         update_url : str
             elog URL for posting progress update
         """
-        requests.post(update_url, json=[{ "key": "Detector distance (mm)", "value": f"{self.distance}" },
-                                        { "key": "Detector center (pixels)", "value": f"{self.center}" },
-                                        { "key": "Detector edge resolution (A)", "value": f"{self.edge_resolution}" }, ])
+        requests.post(update_url, json=[{ "key": "Detector distance (mm)", "value": f"{self.distance:.2f}" },
+                                        { "key": "Detector center (pixels)", "value": f"({self.center[0]:.2f}, {self.center[1]:.2f})" },
+                                        { "key": "Detector edge resolution (A)", "value": f"{self.edge_resolution:.2f}" }, ])
