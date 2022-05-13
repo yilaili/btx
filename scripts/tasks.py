@@ -123,7 +123,7 @@ def find_peaks(config):
     os.makedirs(taskdir, exist_ok=True)
     mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
     pf = PeakFinder(exp=setup.exp, run=setup.run, det_type=setup.det_type, outdir=os.path.join(taskdir ,f"r{setup.run:04}"),
-                    event_receiver=setup.event_receiver, event_code=setup.event_code, event_logic=setup.event_logic,
+                    event_receiver=setup.get('event_receiver'), event_code=setup.get('event_code'), event_logic=setup.get('event_logic'),
                     tag=task.tag, mask=mask_file, psana_mask=task.psana_mask, min_peaks=task.min_peaks, max_peaks=task.max_peaks,
                     npix_min=task.npix_min, npix_max=task.npix_max, amax_thr=task.amax_thr, atot_thr=task.atot_thr, 
                     son_min=task.son_min, peak_rank=task.peak_rank, r0=task.r0, dr=task.dr, nsigm=task.nsigm)
@@ -148,7 +148,7 @@ def index(config):
     geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
     indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, 
                           taskdir=taskdir, geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, 
-                          tolerance=task.tolerance, tag_cxi=task.tag_cxi, no_revalidate=task.no_revalidate, multi=task.multi, profile=task.profile)
+                          tolerance=task.tolerance, tag_cxi=task.get('tag_cxi'), no_revalidate=task.no_revalidate, multi=task.multi, profile=task.profile)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
     indexer_obj.write_exe()
     logger.info(f'Executable written to {indexer_obj.tmp_exe}')
