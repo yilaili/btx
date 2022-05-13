@@ -16,7 +16,7 @@ class PsanaInterface:
         self.seconds, self.nanoseconds, self.fiducials = [], [], []
         self.event_receiver = event_receiver # 'evr0' or 'evr1', str
         self.event_code = event_code # event code, int
-        self.event_logic = event_logic # if True, retain events with event_code; if False, keep all other events
+        self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
         self.set_up(det_type, ffb_mode)
         self.counter = 0
 
