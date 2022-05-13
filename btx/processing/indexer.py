@@ -129,9 +129,9 @@ class Indexer:
                 pf_vals = [item.split(":")[1].strip(" ").strip('\n') for item in lines]
 
                 try:
-                    requests.post(update_url, json=[{ "key": "{pf_keys[0]}", "value": f"{pf_vals[0]}"},
-                                                    { "key": "{pf_keys[1]}", "value": f"{pf_vals[1]}"},
-                                                    { "key": "{pf_keys[2]}", "value": f"{pf_vals[2]}"},
+                    requests.post(update_url, json=[{ "key": f"{pf_keys[0]}", "value": f"{pf_vals[0]}"},
+                                                    { "key": f"{pf_keys[1]}", "value": f"{pf_vals[1]}"},
+                                                    { "key": f"{pf_keys[2]}", "value": f"{pf_vals[2]}"},
                                                     { "key": "Number of indexed events", "value": f"{n_indexed}"},
                                                     { "key": "Fractional indexing rate", "value": f"{(n_indexed/n_total):.2f}"}, ])
                 except:
