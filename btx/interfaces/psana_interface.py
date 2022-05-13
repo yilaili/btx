@@ -6,14 +6,19 @@ from PSCalib.GeometryAccess import GeometryAccess
 
 class PsanaInterface:
 
-    def __init__(self, exp, run, det_type, ffb_mode=False, track_timestamps=False):
+    def __init__(self, exp, run, det_type,
+                 event_receiver=None, event_code=None, event_logic=True,
+                 ffb_mode=False, track_timestamps=False):
         self.exp = exp # experiment name, str
         self.run = run # run number, int
         self.det_type = det_type # detector name, str
         self.track_timestamps = track_timestamps # bool, keep event info
         self.seconds, self.nanoseconds, self.fiducials = [], [], []
+        self.event_receiver = event_receiver # 'evr0' or 'evr1', str
+        self.event_code = event_code # event code, int
+        self.event_logic = event_logic # bool, if True, retain events with event_code; if False, keep all other events
         self.set_up(det_type, ffb_mode)
-        self.counter = 0 
+        self.counter = 0
 
     def set_up(self, det_type, ffb_mode):
         """
@@ -33,11 +38,13 @@ class PsanaInterface:
         
         self.ds = psana.DataSource(ds_args)   
         self.det = psana.Detector(det_type, self.ds.env())
+        if self.event_receiver is not None:
+            self.evr_det = psana.Detector(self.event_receiver)
         self.runner = next(self.ds.runs())
         self.times = self.runner.times()
         self.max_events = len(self.times)
         self._calib_data_available()
-        
+
     def _calib_data_available(self):
         """
         Check whether calibration data is available.
@@ -146,6 +153,31 @@ class PsanaInterface:
         self.nanoseconds.append(evtId.time()[1])
         self.fiducials.append(evtId.fiducials())
         return
+
+    def skip_event(self, evt):
+        """
+        We skip an event if:
+        - it has a specific event_code and our event_logic is False
+        - it does not have that event_code and our event_logic is True.
+
+        Parameters
+        ----------
+        evt : psana.Event object
+            individual psana event
+
+        Returns
+        -------
+        skip_status : Boolean
+            if True, skip event
+        """
+        skip = False
+        if self.event_receiver is not None:
+            event_codes = self.evr_det.eventCodes(evt)
+            if self.event_code in event_codes:
+                found_event = True
+            if ( found_event != self.event_logic ):
+                skip = True
+        return skip
 
     def distribute_events(self, rank, total_ranks, max_events=-1):
         """

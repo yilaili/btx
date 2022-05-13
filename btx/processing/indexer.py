@@ -12,7 +12,7 @@ class Indexer:
     """
 
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
-                 tolerance='5,5,5,1.5', no_revalidate=True, multi=True, profile=True):
+                 tolerance='5,5,5,1.5', tag_cxi='', no_revalidate=True, multi=True, profile=True):
         
         # general paramters
         self.exp = exp
@@ -31,7 +31,7 @@ class Indexer:
         self.no_revalidate = no_revalidate # bool, skip validation step to omit iffy peaks
         self.multi = multi # bool, enable multi-lattice indexing
         self.profile = profile # bool, display timing data
-        self._retrieve_paths(taskdir, tag)
+        self._retrieve_paths(taskdir, tag_cxi, tag)
         self._parallel_logic()
 
     def _parallel_logic(self):
@@ -47,7 +47,7 @@ class Indexer:
         else:
             self.rank = 0
 
-    def _retrieve_paths(self, taskdir, tag):
+    def _retrieve_paths(self, taskdir, tag_cxi, tag):
         """
         Retrieve the paths for the input .lst and output .stream file 
         consistent with the btx analysis directory structure.
@@ -59,7 +59,9 @@ class Indexer:
         tag : str
             filename extension suffix
         """
-        self.lst = os.path.join(taskdir ,f'r{self.run:04}/r{self.run:04}.lst')
+        if ( tag_cxi != ''):
+            tag_cxi = '_'+tag_cxi
+        self.lst = os.path.join(taskdir ,f'r{self.run:04}/r{self.run:04}{tag_cxi}.lst')
         self.stream = os.path.join(taskdir, f'r{self.run:04}_{tag}.stream')
         if "TMP_EXE" in os.environ:
             self.tmp_exe = os.environ['TMP_EXE']
@@ -146,6 +148,7 @@ def parse_input():
     parser.add_argument('-r', '--run', help='Run number', required=True, type=int)
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M', required=True, type=str)
     parser.add_argument('--tag', help='Suffix extension for stream file', required=True, type=str)
+    parser.add_argument('--tag_cxi', help='Tag to identify input CXI files', required=False, type=str)
     parser.add_argument('--taskdir', help='Base directory for indexing results', required=True, type=str)
     parser.add_argument('--report', help='Report indexing results to summary file and elog', action='store_true')
     parser.add_argument('--update_url', help='URL for communicating with elog', required=False, type=str)
@@ -163,8 +166,9 @@ def parse_input():
 if __name__ == '__main__':
     
     params = parse_input()
+    
     indexer_obj = Indexer(exp=params.exp, run=params.run, det_type=params.det_type, tag=params.tag, taskdir=params.taskdir, geom=params.geom, 
-                          cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, 
+                          cell=params.cell, int_rad=params.int_rad, methods=params.methods, tolerance=params.tolerance, tag_cxi=params.tag_cxi,
                           no_revalidate=params.no_revalidate, multi=params.multi, profile=params.profile)
     if not params.report:
         indexer_obj.write_exe()

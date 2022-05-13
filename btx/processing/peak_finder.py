@@ -15,7 +15,8 @@ class PeakFinder:
     https://confluence.slac.stanford.edu/display/PSDM/Hit+and+Peak+Finding+Algorithms
     """
     
-    def __init__(self, exp, run, det_type, outdir, tag='', mask=None, psana_mask=True, camera_length=None,
+    def __init__(self, exp, run, det_type, outdir, event_receiver=None, event_code=None, event_logic=True,
+                 tag='', mask=None, psana_mask=True, camera_length=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
                  son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
         
@@ -41,11 +42,13 @@ class PeakFinder:
         self.outdir = outdir # str, path for saving cxi files
 
         # set up class
-        self.set_up_psana_interface(exp, run, det_type)
+        self.set_up_psana_interface(exp, run, det_type,
+                                    event_receiver, event_code, event_logic)
         self.set_up_cxi(tag)
         self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
         
-    def set_up_psana_interface(self, exp, run, det_type):
+    def set_up_psana_interface(self, exp, run, det_type,
+                               event_receiver=None, event_code=None, event_logic=True):
         """
         Set up PsanaInterface object and distribute events between ranks.
         
@@ -58,7 +61,8 @@ class PeakFinder:
         det_type : str
             detector name, e.g. jungfrau4M or epix10k2M
         """
-        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+        self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
+                                  event_receiver=None, event_code=None, event_logic=True)
         self.psi.distribute_events(self.rank, self.size)
         self.n_events = self.psi.max_events
 
@@ -304,36 +308,39 @@ class PeakFinder:
 
         for idx in np.arange(start_idx, end_idx):
 
-            # retrieve calibrated image
+            # retrieve event and find out if we skip it
             evt = self.psi.runner.event(self.psi.times[idx])
-            self.psi.get_timestamp(evt.get(EventId))
-            img = self.psi.det.calib(evt=evt)
-            if img is None:
-                empty_images += 1
-                continue
+            if not self.psi.skip_event(evt):
 
-            # search for peaks and store if found
-            peaks = self.find_peaks_event(img)
-            if (peaks.shape[0] >= self.min_peaks) and (peaks.shape[0] <= self.max_peaks):
-                try:
-                    phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength_evt(evt) / 10 / 1.0e9)
-                except AttributeError:
-                    print(f"AttributeError, evt type: {type(evt)} for event {evt}")
-                    phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength() / 10 / 1.0e9)
-                self.store_event(outh5, img, peaks, phot_energy)
-                self.n_hits+=1
+                # retrieve calibrated image
+                self.psi.get_timestamp(evt.get(EventId))
+                img = self.psi.det.calib(evt=evt)
+                if img is None:
+                    empty_images += 1
+                    continue
+
+                # search for peaks and store if found
+                peaks = self.find_peaks_event(img)
+                if (peaks.shape[0] >= self.min_peaks) and (peaks.shape[0] <= self.max_peaks):
+                    try:
+                        phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength_evt(evt) / 10 / 1.0e9)
+                    except AttributeError:
+                        print(f"AttributeError, evt type: {type(evt)} for event {evt}")
+                        phot_energy = 1.23984197386209e-06 / (self.psi.get_wavelength() / 10 / 1.0e9)
+                    self.store_event(outh5, img, peaks, phot_energy)
+                    self.n_hits+=1
                 
-            # generate / update powders
-            if peaks.shape[0] >= self.min_peaks:
-                if self.powder_hits is None:
-                    self.powder_hits = img
+                # generate / update powders
+                if peaks.shape[0] >= self.min_peaks:
+                    if self.powder_hits is None:
+                        self.powder_hits = img
+                    else:
+                        self.powder_hits = np.maximum(self.powder_hits, img)
                 else:
-                    self.powder_hits = np.maximum(self.powder_hits, img)
-            else:
-                if self.powder_misses is None:
-                    self.powder_misses = img
-                else:
-                    self.powder_misses = np.maximum(self.powder_misses, img)
+                    if self.powder_misses is None:
+                        self.powder_misses = img
+                    else:
+                        self.powder_misses = np.maximum(self.powder_misses, img)
             
             self.psi.counter+=1
             if self.psi.counter == self.psi.max_events:
@@ -476,6 +483,9 @@ def parse_input():
     parser.add_argument('-o', '--outdir', help='Output directory for cxi files', required=True, type=str)
     parser.add_argument('-t', '--tag', help='Tag to append to cxi file names', required=False, type=str, default='')
     parser.add_argument('-m', '--mask', help='Binary mask', required=False, type=str)
+    parser.add_argument('--event_receiver', help='Event Receiver to be used: evr0 or evr1', required=False, type=str, default='None')
+    parser.add_argument('--event_code', help='Event code', required=False, type=int, default='None')
+    parser.add_argument('--event_logic', help='True if only the event code is processed. False if it is ignored.', type=bool, default=True)
     parser.add_argument('--psana_mask', help='If True, apply mask from psana Detector object', required=False, type=bool, default=True)
     parser.add_argument('--min_peaks', help='Minimum number of peaks per image', required=False, type=int, default=2)
     parser.add_argument('--max_peaks', help='Maximum number of peaks per image', required=False, type=int, default=2048)
@@ -494,7 +504,8 @@ def parse_input():
 if __name__ == '__main__':
     
     params = parse_input()
-    pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, outdir=params.outdir, tag=params.tag,
+    pf = PeakFinder(exp=params.exp, run=params.run, det_type=params.det_type, outdir=params.outdir,
+                    event_receiver=None, event_code=None, event_logic=True, tag=params.tag,
                     mask=params.mask, psana_mask=params.psana_mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
                     npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, 
                     son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm)
