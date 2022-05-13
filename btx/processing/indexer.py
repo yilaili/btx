@@ -122,8 +122,17 @@ class Indexer:
             # post to elog
             update_url = os.environ.get('JID_UPDATE_COUNTERS')
             if update_url is not None:
+                # retrieve results from peakfinding.summary, since these will be overwritten in the elog
+                with open(self.peakfinding_summary, "r") as f:
+                    lines = f.readlines()[:3]
+                pf_keys = [item.split(":")[0] for item in lines]
+                pf_vals = [item.split(":")[1].strip(" ").strip('\n') for item in lines]
+
                 try:
-                    requests.post(update_url, json=[{ "key": "Number of indexed events", "value": f"{n_indexed}"},
+                    requests.post(update_url, json=[{ "key": "{pf_keys[0]}", "value": f"{pf_vals[0]}"},
+                                                    { "key": "{pf_keys[1]}", "value": f"{pf_vals[1]}"},
+                                                    { "key": "{pf_keys[2]}", "value": f"{pf_vals[2]}"},
+                                                    { "key": "Number of indexed events", "value": f"{n_indexed}"},
                                                     { "key": "Fractional indexing rate", "value": f"{(n_indexed/n_total):.2f}"}, ])
                 except:
                     print("Could not communicate with the elog update url")
