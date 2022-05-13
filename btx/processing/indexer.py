@@ -70,8 +70,8 @@ class Indexer:
             self.tmp_exe = os.environ['TMP_EXE']
         else:
             self.tmp_exe = os.path.join(taskdir ,f'r{self.run:04}/index_r{self.run:04}.sh')
-        self.peakfinding_summary = os.path.join(taskdir ,f'r{self.run:04}/peakfinding.summary')
-        self.indexing_summary = os.path.join(taskdir ,f'r{self.run:04}/indexing.summary')
+        self.peakfinding_summary = os.path.join(taskdir ,f'r{self.run:04}/peakfinding{tag_cxi}.summary')
+        self.indexing_summary = os.path.join(taskdir ,f'r{self.run:04}/indexing_{tag}.summary')
 
         self.script_path = os.path.abspath(__file__)
         self.python_path = os.environ['WHICHPYTHON']
