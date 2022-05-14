@@ -48,4 +48,4 @@ index:
   profile: True
 
 stream_analysis:
-  tag: 'sample1'
+  tag: 'sample1_nocell'
