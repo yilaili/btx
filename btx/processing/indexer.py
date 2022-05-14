@@ -21,6 +21,7 @@ class Indexer:
 
         self.taskdir = taskdir
         self.tag = tag
+        self.tag_cxi = tag_cxi
         
         # indexing parameters
         self.geom = geom # geometry file in CrystFEL format
@@ -31,7 +32,7 @@ class Indexer:
         self.no_revalidate = no_revalidate # bool, skip validation step to omit iffy peaks
         self.multi = multi # bool, enable multi-lattice indexing
         self.profile = profile # bool, display timing data
-        self._retrieve_paths(taskdir, tag_cxi, tag)
+        self._retrieve_paths()
         self._parallel_logic()
 
     def _parallel_logic(self):
@@ -47,31 +48,24 @@ class Indexer:
         else:
             self.rank = 0
 
-    def _retrieve_paths(self, taskdir, tag_cxi, tag):
+    def _retrieve_paths(self):
         """
         Retrieve the paths for the input .lst and output .stream file 
         consistent with the btx analysis directory structure.
-        
-        Parameters
-        ----------
-        taskdir : str
-            path to output folder for indexing results
-        tag : str
-            filename extension suffix
         """
-        if tag_cxi is not None :
-            if ( tag_cxi != '' ):
-                tag_cxi = '_'+tag_cxi
+        if self.tag_cxi is not None :
+            if ( self.tag_cxi != '' ):
+                self.tag_cxi = '_'+self.tag_cxi
         else:
-            tag_cxi = ''
-        self.lst = os.path.join(taskdir ,f'r{self.run:04}/r{self.run:04}{tag_cxi}.lst')
-        self.stream = os.path.join(taskdir, f'r{self.run:04}_{tag}.stream')
+            self.tag_cxi = ''
+        self.lst = os.path.join(self.taskdir ,f'r{self.run:04}/r{self.run:04}{self.tag_cxi}.lst')
+        self.stream = os.path.join(self.taskdir, f'r{self.run:04}_{self.tag}.stream')
         if "TMP_EXE" in os.environ:
             self.tmp_exe = os.environ['TMP_EXE']
         else:
-            self.tmp_exe = os.path.join(taskdir ,f'r{self.run:04}/index_r{self.run:04}.sh')
-        self.peakfinding_summary = os.path.join(taskdir ,f'r{self.run:04}/peakfinding{tag_cxi}.summary')
-        self.indexing_summary = os.path.join(taskdir ,f'r{self.run:04}/indexing_{tag}.summary')
+            self.tmp_exe = os.path.join(self.taskdir ,f'r{self.run:04}/index_r{self.run:04}.sh')
+        self.peakfinding_summary = os.path.join(self.taskdir ,f'r{self.run:04}/peakfinding{self.tag_cxi}.summary')
+        self.indexing_summary = os.path.join(self.taskdir ,f'r{self.run:04}/indexing_{self.tag}.summary')
 
         self.script_path = os.path.abspath(__file__)
         self.python_path = os.environ['WHICHPYTHON']
@@ -87,7 +81,7 @@ class Indexer:
             if self.multi: command += ' --multi'
             if self.profile: command += ' --profile'
 
-            command_report=f"{self.python_path} {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag}"
+            command_report=f"{self.python_path} {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} --tag_cxi {self.tag_cxi}"
 
             with open(self.tmp_exe, 'w') as f:
                 f.write("#!/bin/bash\n")
