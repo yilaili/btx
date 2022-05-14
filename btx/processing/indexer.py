@@ -54,7 +54,7 @@ class Indexer:
         consistent with the btx analysis directory structure.
         """
         if self.tag_cxi is not None :
-            if ( self.tag_cxi != '' ):
+            if ( self.tag_cxi != '' ) and ( self.tag_cxi[0]!='_' ):
                 self.tag_cxi = '_'+self.tag_cxi
         else:
             self.tag_cxi = ''
