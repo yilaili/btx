@@ -70,7 +70,13 @@ class PsanaInterface:
         pixel_size : float
             detector pixel size in mm
         """
-        return self.det.pixel_size(self.ds.env()) / 1.0e3
+        if self.det_type == 'Rayonix':
+            env = self.ds.env()
+            cfg = env.configStore()
+            pixel_size_um = cfg.get(psana.Rayonix.ConfigV2).pixelWidth()
+        else:
+            pixel_size_um = self.det.pixel_size(self.ds.env())
+        return pixel_size_um / 1.0e3
     
     def get_wavelength(self):
         """
