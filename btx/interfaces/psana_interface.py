@@ -173,6 +173,7 @@ class PsanaInterface:
         skip = False
         if self.event_receiver is not None:
             event_codes = self.evr_det.eventCodes(evt)
+            found_event = False
             if self.event_code in event_codes:
                 found_event = True
             if ( found_event != self.event_logic ):
