@@ -28,7 +28,7 @@ class AgBehenate:
             beam wavelength in Angstrom
         """
         self.q0 = 0.1076 # |q| of first peak in Angstrom
-        self.delta_qs = np.arange(0.01,0.05,0.00005) # q-spacings to scan over
+        self.delta_qs = np.arange(0.015,0.05,0.00005) # q-spacings to scan over
         self.powder = powder
         self.mask = mask
         self.pixel_size = pixel_size
