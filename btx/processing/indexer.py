@@ -117,6 +117,7 @@ class Indexer:
             output,error  = subprocess.Popen(
                                 command, universal_newlines=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            print(output)
             n_total = int(output.split(":")[1].split("\n")[0])
             
             # write summary file
