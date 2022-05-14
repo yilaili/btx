@@ -81,7 +81,8 @@ class Indexer:
             if self.multi: command += ' --multi'
             if self.profile: command += ' --profile'
 
-            command_report=f"{self.python_path} {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} --tag_cxi {self.tag_cxi}"
+            command_report=f"{self.python_path} {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} "
+            if ( self.tag_cxi != '' ): command_report += f' --tag_cxi {self.tag_cxi}'
 
             with open(self.tmp_exe, 'w') as f:
                 f.write("#!/bin/bash\n")
