@@ -62,7 +62,7 @@ class PeakFinder:
             detector name, e.g. jungfrau4M or epix10k2M
         """
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
-                                  event_receiver=None, event_code=None, event_logic=True)
+                                  event_receiver=event_receiver, event_code=event_code, event_logic=event_logic)
         self.psi.distribute_events(self.rank, self.size)
         self.n_events = self.psi.max_events
 
