@@ -5,7 +5,7 @@ setup:
   det_type: 'Rayonix'
   event_receiver: 'evr0'
   event_code: 205
-  event_logic: True
+  event_logic: False
 
 fetch_mask:
   dataset: '/entry_1/data_1/mask'
