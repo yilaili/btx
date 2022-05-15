@@ -27,7 +27,7 @@ opt_geom:
   threshold: 1000000
 
 find_peaks:
-  tag: 'highph1'
+  tag: 'highph1_on'
   psana_mask: False
   min_peaks: 10
   max_peaks: 2048
@@ -42,8 +42,8 @@ find_peaks:
   nsigm: 10.0
 
 index:
-  tag_cxi: 'highph1'
-  tag: 'highph1'
+  tag_cxi: 'highph1_on'
+  tag: 'highph1_on'
   int_radius: '3,4,5'
   methods: 'mosflm'
   cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/btx_elog/index/cells/high-pH_1.cell'
