@@ -83,7 +83,7 @@ class AgBehenate:
         print("Detector distance inferred from powder rings: %s mm" % (np.round(distance,2)))
         return distance
     
-    def opt_distance(self, plot=None):
+    def opt_distance(self, plot=None, vmax=None):
         """
         Optimize the sample-detector distance based on the powder image.
         
@@ -91,6 +91,8 @@ class AgBehenate:
         ----------
         plot : str or None
             output path for figure; if '', plot but don't save; if None, don't plot
+        vmax : float 
+            vmax value for powder plot 
         
         Returns
         -------
@@ -112,7 +114,7 @@ class AgBehenate:
         opt_distance = self.detector_distance(peaks_predicted[0])
         
         if plot is not None:
-            self.visualize_results(self.powder, mask=self.mask, center=self.centers[-1], 
+            self.visualize_results(self.powder, mask=self.mask, vmax=vmax, center=self.centers[-1], 
                                    peaks_predicted=peaks_predicted, peaks_observed=peaks_observed,
                                    scores=scores, Dq=self.delta_qs,
                                    radialprofile=iprofile, qprofile=qprofile, plot=plot)
@@ -154,7 +156,7 @@ class AgBehenate:
                 
         print(f"New center is {(self.centers[-1][0], self.centers[-1][1])}")
         
-    def opt_geom(self, distance_i, n_iterations=5, n_peaks=3, threshold=1e6, center_i=None, plot=None):
+    def opt_geom(self, distance_i, n_iterations=5, n_peaks=3, threshold=1e6, center_i=None, plot=None, vmax=None):
         """
         Optimize the detector geometry, sequentially refining the distance and center
         in an iterative fashion.
@@ -173,6 +175,8 @@ class AgBehenate:
             initial estimate of detector center in pixels
         plot : str or None
             if a legitimate path, save plot; if empty str, display plot; if None, don't plot
+        vmax : float
+            vmax value for powder plot
         """
         # store initial distance and center
         self.distances.append(distance_i)
@@ -186,11 +190,11 @@ class AgBehenate:
             self.powder[self.powder>threshold] = 0
             
         # iterate over distance and center estimation
-        peaks_obs, peak_vals = self.opt_distance(plot=plot)
+        peaks_obs, peak_vals = self.opt_distance(plot=plot, vmax=vmax)
         for niter in range(n_iterations):
             peaks_obs_sel = peaks_obs[np.argsort(peak_vals[:8])[::-1][:n_peaks]] # highest intensity peaks from first 8 in q.
             self.opt_center(peaks_obs_sel)
-            peaks_obs, peak_vals = self.opt_distance(plot=plot)
+            peaks_obs, peak_vals = self.opt_distance(plot=plot, vmax=vmax)
     
     def visualize_results(self, image, mask=None, vmax=None,
                           center=None, peaks_predicted=None, peaks_observed=None,
@@ -234,7 +238,9 @@ class AgBehenate:
         if mask is not None:
             image *= mask
         if vmax is None:
-            vmax = 2*np.mean(image)
+            # heuristic for decent vmax based on examining several powders
+            peakvals = radialprofile[peaks_observed]
+            vmax = 1.5*np.mean(peakvals[np.argsort(peakvals[:8])[::-1][2:5]])
         ax3.imshow(image,interpolation='none',vmin=0,vmax=vmax)
         ax3.set_title('Average Silver Behenate')
         if center is not None:
