@@ -242,7 +242,7 @@ class AgBehenate:
             peakvals = radialprofile[peaks_observed]
             vmax = 1.5*np.mean(peakvals[np.argsort(peakvals[:8])[::-1][2:5]])
         ax3.imshow(image,interpolation='none',vmin=0,vmax=vmax)
-        ax3.set_title('Average Silver Behenate')
+        ax3.set_title('Max Silver Behenate')
         if center is not None:
             ax3.plot(center[0],center[1],'ro')
             if peaks_predicted is not None:
