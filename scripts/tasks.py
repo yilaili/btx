@@ -94,24 +94,25 @@ def opt_geom(config):
     geom_opt = GeomOpt(exp=setup.exp,
                        run=setup.run,
                        det_type=setup.det_type)
-    mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
-    logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
-    geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
-                      mask=mask_file,
-                      n_iterations=task.get('n_iterations'), 
-                      n_peaks=task.get('n_peaks'), 
-                      threshold=task.get('threshold'),
-                      plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
-    try:
-        geom_opt.report(update_url)
-    except:
-        logger.debug("Could not communicate with the elog update url")
-    logger.info(f'Detector distance in mm inferred from powder rings: {geom_opt.distance}')
-    logger.info(f'Detector center in pixels inferred from powder rings: {geom_opt.center}')
-    logger.info(f'Detector edge resolution in Angstroms: {geom_opt.edge_resolution}')    
-    geom_opt.deploy_geometry(taskdir)
-    logger.info(f'Updated geometry files saved to: {taskdir}')
-    logger.debug('Done!')
+    if geom_opt.rank == 0:
+        mask_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'mask', 'r*.npy'), run=setup.run)
+        logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
+        geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
+                          mask=mask_file,
+                          n_iterations=task.get('n_iterations'), 
+                          n_peaks=task.get('n_peaks'), 
+                          threshold=task.get('threshold'),
+                          plot=os.path.join(taskdir, f'figs/r{setup.run:04}.png'))
+        try:
+            geom_opt.report(update_url)
+        except:
+            logger.debug("Could not communicate with the elog update url")
+        logger.info(f'Detector distance in mm inferred from powder rings: {geom_opt.distance}')
+        logger.info(f'Detector center in pixels inferred from powder rings: {geom_opt.center}')
+        logger.info(f'Detector edge resolution in Angstroms: {geom_opt.edge_resolution}')    
+        geom_opt.deploy_geometry(taskdir)
+        logger.info(f'Updated geometry files saved to: {taskdir}')
+        logger.debug('Done!')
 
 def find_peaks(config):
     from btx.processing.peak_finder import PeakFinder

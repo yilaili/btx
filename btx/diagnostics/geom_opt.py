@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import requests
+from mpi4py import MPI
 from btx.diagnostics.run import RunDiagnostics
 from btx.interfaces.psana_interface import assemble_image_stack_batch
 from btx.misc.metrology import *
@@ -16,6 +17,10 @@ class GeomOpt:
         self.center = None
         self.distance = None
         self.edge_resolution = None
+
+        # have a rank variable available in case we're running via a multi-core DAG
+        comm = MPI.COMM_WORLD
+        self.rank = comm.Get_rank()
 
     def opt_geom(self, powder, sample='AgBehenate', mask=None, center=None, 
                  n_iterations=5, n_peaks=3, threshold=1e6, plot=None):
