@@ -120,7 +120,7 @@ class AgBehenate:
         self.distances.append(opt_distance)
         return peaks_observed, iprofile[peaks_observed]
     
-    def opt_center(self, peaks_observed, num=200):
+    def opt_center(self, peaks_observed, num_circle_points=200):
         """
         Optimize the detector center by fitting circles to pixels predicted
         to fall in the powder rings.
@@ -129,22 +129,22 @@ class AgBehenate:
         ----------
         peaks_observed : numpy.ndarray, 1d
             radii of detected powder peaks in pixels
-        num : int
-            number of points per ring to use for fitting
+        num_circle_points : int
+            number of points per powder ring to use for fitting
         """
         # Create a concentric circle model...
         cx, cy = self.centers[-1]
-        model = OptimizeConcentricCircles(cx=cx, cy=cy, r=peaks_observed, num=num)
+        model = OptimizeConcentricCircles(cx=cx, cy=cy, r=peaks_observed, num_circle_points=num_circle_points)
         model.generate_crds()
         crds_init = model.crds.copy()
-        crds_init = crds_init.reshape(2, -1, num)
+        crds_init = crds_init.reshape(2, -1, num_circle_points)
 
         # Fitting...
         img = (self.powder - np.mean(self.powder)) / np.std(self.powder)
         res = model.fit(img)
         model.report_fit(res)
         crds = model.crds
-        crds = crds.reshape(2, -1, num)
+        crds = crds.reshape(2, -1, num_circle_points)
 
         # Update the center position...
         cx = res.params['cx'].value
