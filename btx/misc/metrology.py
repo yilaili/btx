@@ -31,6 +31,40 @@ def retrieve_from_mrxv(det_type, out_geom, mrxv_path='/cds/sw/package/autosfx/mr
 
     geom.to_crystfel_file(out_geom)
 
+def modify_crystfel_coffset_res(input_file, output_file, coffset, res):
+    """
+    Overwrite the coffset and res entries in a CrystFEL .geom file. This is a 
+    hack to fix Rayonix geom files generated using the wrong pixel size.
+    
+    Parameters
+    ----------
+    input_file : str
+        input .geom file
+    output_file : str
+        output modified .geom file
+    coffset : float
+        coffset value in meters
+    res : float
+        pixel resolution in um
+    """
+    outfile = open(output_file, "w")
+
+    with open(input_file, "r") as infile:
+        for line in infile.readlines():
+            
+            if 'coffset' in line:
+                start = line.split("=")[0].strip(" ")
+                outfile.write(f"{start} = {coffset}\n")
+                
+            elif "res = " in line:
+                start = line.split("=")[0].strip(" ")
+                outfile.write(f"{start} = {res}\n")
+            
+            else:
+                outfile.write(line)
+
+    outfile.close()
+
 def modify_crystfel_header(input_file, output_file):
     """
     Modify the header of a psgeom-generated Crystfel (.geom) file,

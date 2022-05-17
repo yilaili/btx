@@ -116,14 +116,14 @@ def q2pix(qvals, wavelength, distance, pixel_size):
 
 class ConcentricCircles:
 
-    def __init__(self, cx, cy, r, num = 100):
+    def __init__(self, cx, cy, r, num_circle_points = 100):
         super().__init__()
 
-        self.cx  = cx                                # Beam center position in pixels along x-axis (axis = 1 in numpy format)
-        self.cy  = cy                                # Beam center position in pixels along y-axis
-        self.r   = np.array([r]).reshape(-1)         # List of radii for all concentric circles in pixels
-        self.num = num                               # Number of pixels sampled from a circle
-        self.crds = np.zeros((2, num * len(self.r))) # Coordinates where pixels are sampled from all circles.  Unit is pixel.  2 is the size of (x, y)
+        self.cx  = cx                                              # Beam center position in pixels along x-axis (axis = 1 in numpy format)
+        self.cy  = cy                                              # Beam center position in pixels along y-axis
+        self.r   = np.array([r]).reshape(-1)                       # List of radii for all concentric circles in pixels
+        self.num_circle_points = num_circle_points                 # Number of pixels sampled from a circle
+        self.crds = np.zeros((2, num_circle_points * len(self.r))) # Coordinates where pixels are sampled from all circles.  Unit is pixel.  2 is the size of (x, y)
 
     def generate_crds(self):
         """
@@ -135,7 +135,7 @@ class ConcentricCircles:
         r  = np.array([self.r]).reshape(-1, 1) # Facilitate broadcasting in calculting crds_x and crds_y
 
         # Find all theta values for generating coordinates of sample points...
-        theta = np.linspace(0.0, 2 * np.pi, self.num)
+        theta = np.linspace(0.0, 2 * np.pi, self.num_circle_points)
         if not isinstance(theta, np.ndarray): theta = np.array([theta]).reshape(-1)
 
         # Generate coordinates...
@@ -166,8 +166,8 @@ class ConcentricCircles:
 
 class OptimizeConcentricCircles(ConcentricCircles):
 
-    def __init__(self, cx, cy, r, num):
-        super().__init__(cx, cy, r, num)
+    def __init__(self, cx, cy, r, num_circle_points):
+        super().__init__(cx, cy, r, num_circle_points)
 
         # Provide parameters for optimization...
         self.params = self.init_params()
@@ -194,7 +194,7 @@ class OptimizeConcentricCircles(ConcentricCircles):
 
         Parameters
         ----------
-        params : dictionary
+        params : dict
             parameters for optimization
 
         Returns
@@ -206,15 +206,17 @@ class OptimizeConcentricCircles(ConcentricCircles):
 
     def residual_model(self, params, img, **kwargs):
         """
-        Calculate the residual for least square optimization.
+        Calculate the residual for least square optimization. The residual
+        is computed as the difference between the intensity values of pixels
+        that belong to the rings and the image's maximum intensity value.
 
         Parameters
         ----------
-        params : dictionary
+        params : dict
             parameters for optimization
         img : numpy.ndarray
             a powder image
-        kwargs : dictionary
+        kwargs : dict
             additional key-value arguments
         
         Returns
