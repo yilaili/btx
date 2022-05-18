@@ -22,7 +22,7 @@ class GeomOpt:
         comm = MPI.COMM_WORLD
         self.rank = comm.Get_rank()
 
-    def opt_geom(self, powder, sample='AgBehenate', mask=None, center=None, 
+    def opt_geom(self, powder, sample='AgBehenate', mask=None, center=None, distance=None,
                  n_iterations=5, n_peaks=3, threshold=1e6, plot=None):
         """
         Estimate the sample-detector distance based on the properties of the powder
@@ -39,6 +39,8 @@ class GeomOpt:
             npy file of mask in psana unassembled detector shape
         center : tuple
             detector center (xc,yc) in pixels. if None, assume assembled image center.
+        distance : float
+            sample-detector distance in mm. If None, pull from calib file.
         n_iterations : int
             number of refinement steps
         n_peaks : int
@@ -72,12 +74,15 @@ class GeomOpt:
             if self.diagnostics.psi.det_type != 'Rayonix':
                 mask = assemble_image_stack_batch(mask, self.diagnostics.pixel_index_map)
 
+        if distance is None:
+            distance = self.diagnostics.psi.estimate_distance()
+
         if sample == 'AgBehenate':
             ag_behenate = AgBehenate(powder_img,
                                      mask,
                                      self.diagnostics.psi.get_pixel_size(),
                                      self.diagnostics.psi.get_wavelength())
-            ag_behenate.opt_geom(self.diagnostics.psi.estimate_distance(), 
+            ag_behenate.opt_geom(distance, 
                                  n_iterations=n_iterations, 
                                  n_peaks=n_peaks, 
                                  threshold=threshold, 
