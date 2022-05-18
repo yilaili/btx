@@ -99,6 +99,7 @@ def opt_geom(config):
         logger.debug(f'Optimizing detector distance for run {setup.run} of {setup.exp}...')
         geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
                           mask=mask_file,
+                          distance=task.get('distance'),
                           n_iterations=task.get('n_iterations'), 
                           n_peaks=task.get('n_peaks'), 
                           threshold=task.get('threshold'),
