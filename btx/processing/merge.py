@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import os
+import requests
 
 class StreamtoMtz:
     
@@ -41,10 +42,9 @@ class StreamtoMtz:
                 
         # generate directories if they don't already exit
         self.hkl_dir = os.path.join(self.taskdir, "hkl")
-        self.mtz_dir = os.path.join(self.taskdir, "mtz")
         self.fig_dir = os.path.join(self.taskdir, "figs")
         if self.rank == 0:
-            for dirname in [self.hkl_dir, self.mtz_dir, self.fig_dir]:
+            for dirname in [self.hkl_dir, self.fig_dir]:
                 os.makedirs(dirname, exist_ok=True)
 
         # retrieve paths
@@ -85,11 +85,10 @@ class StreamtoMtz:
                 f.write(f"{command}\n")
             print(f"Merging executable written to {self.tmp_exe}")
             
-    def cmd_compare_hkl(self, foms=['CC','Rsplit'], nshells=None, highres=None):
+    def cmd_compare_hkl(self, foms=['CC','Rsplit'], nshells=10, highres=None):
         """
         Run compare_hkl on half-sets to compute the dataset's figures of merit.
-        Append a line to the executable to plot the results.
-        
+
         Parameters
         ----------
         foms : list of str
@@ -101,20 +100,29 @@ class StreamtoMtz:
         """
         if self.rank == 0:
             for fom in foms:
-                shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}.dat")
-                command = f'compare_hkl -y {self.symmetry} --fom {fom} {self.outhkl}1 {self.outhkl}2 -p {self.cell} --shell-file={shell_file}'
-                if nshells is not None:
-                    command += f" --nshells={nshells}"
+                shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}_n{nshells}.dat")
+                command = f'compare_hkl -y {self.symmetry} --fom {fom} {self.outhkl}1 {self.outhkl}2 -p {self.cell} --shell-file={shell_file} --nshells={nshells}'
                 if highres is not None:
                     command += f" --highres={highres}"
                     
                 with open(self.tmp_exe, 'a') as f:
                     f.write(f"{command}\n")
                 print(f"Calculation for FOM {fom} appended to {self.tmp_exe}")
-                
-            # write command to run script from command line in report mode
+
+    def cmd_report(self, foms=['CC','Rsplit'], nshells=10):
+        """
+        Append a line to the executable to report and plot the results. 
+        
+        Parameters
+        ----------
+        foms : list of str
+            figures of merit to compute
+        nshells : int 
+            number of resolution shells  
+        """
+        if self.rank == 0:
             foms_args = " ".join(map(str,foms))
-            command_report=f"{self.python_path} {self.script_path} -i {self.stream} --symmetry {self.symmetry} --cell {self.cell} --taskdir {self.taskdir} --fom {foms_args} --report"
+            command_report=f"{self.python_path} {self.script_path} -i {self.stream} --symmetry {self.symmetry} --cell {self.cell} --taskdir {self.taskdir} --fom {foms_args} --report --nshells={nshells}"
             with open(self.tmp_exe, 'a') as f:
                 f.write(f"{command_report}\n")
                 
@@ -123,13 +131,13 @@ class StreamtoMtz:
         Convert hkl to mtz format using CrystFEL's get_hkl tool:
         https://www.desy.de/~twhite/crystfel/manual-get_hkl.html
         """
-        outmtz = os.path.join(self.mtz_dir, f"{self.prefix}.mtz")
+        outmtz = os.path.join(self.taskdir, f"{self.prefix}.mtz")
         if self.rank == 0:
             command = f"get_hkl -i {self.outhkl} -o {outmtz} -p {self.cell} --output-format=mtz"
             with open(self.tmp_exe, 'a') as f:
                 f.write(f"{command}\n")
         
-    def report(self, foms=['CC','Rsplit'], update_url=None):
+    def report(self, foms=['CC','Rsplit'], nshells=10, update_url=None):
         """
         Summarize results: plot figures of merit and optionally report to elog.
         
@@ -137,25 +145,42 @@ class StreamtoMtz:
         ----------
         foms : list of str
             figures of merit to compute
+        nshells : int
+            number of shells used to compute figure(s) of merit
         update_url : str
             elog URL for posting progress update
         """
         if self.rank == 0:
             
-            # plot each figure of merit
+            overall_foms = {}
             for fom in foms:
-                shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}.dat")
-                plot_file = os.path.join(self.fig_dir, f"{self.prefix}_{fom}.png")
-                plot_shells_dat(shell_file, plot_file)
+                for ns in [1, nshells]:
+                    shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}_n{ns}.dat")
+                    if ns != 1:
+                        plot_file = os.path.join(self.fig_dir, f"{self.prefix}_{fom}.png")
+                        wrangle_shells_dat(shell_file, plot_file)
+                    else:
+                        key, val = wrangle_shells_dat(shell_file)
+                        overall_foms[key] = val
+
+            # write summary file
+            summary_file = os.path.join(self.taskdir, "merge.summary")
+            with open(summary_file, 'w') as f:
+                for key in overall_foms.keys():
+                    f.write(f"Overall {key}: {overall_foms[key]}\n")
                         
+            # report to elog
             update_url = os.environ.get('JID_UPDATE_COUNTERS')
             if update_url is not None:
-                print("Will report to elog...")
-                        
+                elog_json = [{"key": f"{fom_name}", "value": f"{stat}"} for fom_name,stat in overall_foms.items()]
+                requests.post(updat_url, json=elog_json)
 
-def plot_shells_dat(shells_file, outfile=None):
+
+def wrangle_shells_dat(shells_file, outfile=None):
     """
-    Plot a shells file produced by CrystFEL's compare_hkl.
+    Extract the information produced by CrystFEL's compare_hkl. If the .dat
+    file was created with nshells==1, return the overall statistics. If the
+    .dat file was created with nshells>1, plot the data instead.
     
     Parameters
     ----------
@@ -163,6 +188,13 @@ def plot_shells_dat(shells_file, outfile=None):
         path to a CrystFEL shells.dat file
     outfile : str
         path for saving plot, optional
+        
+    Returns
+    -------
+    fom : str
+        figure of merit
+    stat : float
+        overall figure of merit value
     """  
     shells = np.loadtxt(shells_file, skiprows=1)
     with open(shells_file) as f:
@@ -170,19 +202,25 @@ def plot_shells_dat(shells_file, outfile=None):
         header = lines.split('\n')[0]
     fom = header.split()[2]
     
-    f, ax1 = plt.subplots(figsize=(6,4))
-
-    ax1.plot(shells[:,0], shells[:,1], c='black')
-    ax1.scatter(shells[:,0], shells[:,1], c='black')
-
-    ticks = ax1.get_xticks()
-    ax1.set_xticklabels(["{0:0.2f}".format(i) for i in 10/ticks])
-    ax1.tick_params(axis='both', which='major', labelsize=12)
-    ax1.set_xlabel("Resolution ($\mathrm{\AA}$)", fontsize=14)
-    ax1.set_ylabel(f"{fom}", fontsize=14)
+    if len(shells.shape)==1:
+        if outfile is not None:
+            print("The .dat file was generated with only one shell so cannot be plotted.")
+        return fom, shells[1]
     
-    if outfile is not None:
-        f.savefig(outfile, dpi=300, bbox_inches='tight')
+    if len(shells.shape) > 1:
+        f, ax1 = plt.subplots(figsize=(6,4))
+
+        ax1.plot(shells[:,0], shells[:,1], c='black')
+        ax1.scatter(shells[:,0], shells[:,1], c='black')
+
+        ticks = ax1.get_xticks()
+        ax1.set_xticklabels(["{0:0.2f}".format(i) for i in 10/ticks])
+        ax1.tick_params(axis='both', which='major', labelsize=12)
+        ax1.set_xlabel("Resolution ($\mathrm{\AA}$)", fontsize=14)
+        ax1.set_ylabel(f"{fom}", fontsize=14)
+
+        if outfile is not None:
+            f.savefig(outfile, dpi=300, bbox_inches='tight')
 
 def parse_input():
     """
@@ -216,7 +254,9 @@ if __name__ == '__main__':
     
     if not params.report:
         stream2mtz_obj.cmd_partialator(iterations=params.iterations, model=params.model, min_res=params.min_res, push_res=params.push_res)
-        stream2mtz_obj.cmd_compare_hkl(foms=params.foms, nshells=params.nshells, highres=params.highres)
+        for ns in [1, params.nshells]:
+            stream2mtz_obj.cmd_compare_hkl(foms=params.foms, nshells=ns, highres=params.highres)
+        stream2mtz_obj.cmd_report(foms=params.foms, nshells=params.nshells)
         stream2mtz_obj.cmd_get_hkl()
     else:
         stream2mtz_obj.report(foms=params.foms, update_url=params.update_url)
