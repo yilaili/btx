@@ -180,7 +180,7 @@ class StreamtoMtz:
             update_url = os.environ.get('JID_UPDATE_COUNTERS')
             if update_url is not None:
                 elog_json = [{"key": f"{fom_name}", "value": f"{stat}"} for fom_name,stat in overall_foms.items()]
-                requests.post(updat_url, json=elog_json)
+                requests.post(update_url, json=elog_json)
 
 
 def wrangle_shells_dat(shells_file, outfile=None):
