@@ -20,5 +20,8 @@ dag = DAG(
 task_id='stream_analysis'
 stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
 
+task_id='merge'
+merge = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+
 # Draw the DAG
-stream_analysis
+stream_analysis >> merge
