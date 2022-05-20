@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import os
+import sys
 import requests
+import shutil
 
 class StreamtoMtz:
     
@@ -52,6 +54,11 @@ class StreamtoMtz:
         self.python_path = os.environ['WHICHPYTHON']
         self.prefix = os.path.basename(self.stream).split("stream")[0][:-1]
         self.outhkl = os.path.join(self.hkl_dir, f"{self.prefix}.hkl")
+
+        # check that CrystFEL commands exist
+        for cmd in ['partialator', 'compare_hkl', 'get_hkl']:
+            if shutil.which(cmd) is None:
+                sys.exit(f"Error: could not find CrystFEL executable {cmd}.")
 
     def cmd_partialator(self, iterations=1, model='unity', min_res=None, push_res=None):
         """
