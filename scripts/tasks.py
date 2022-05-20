@@ -174,3 +174,20 @@ def stream_analysis(config):
         stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
         os.system(f"cat {stream_files} >> {stream_cat}")
         logger.debug('Done!')
+
+def merge(config):
+    from btx.processing.merge import StreamtoMtz
+    setup = config.setup
+    task = config.merge
+    """ Merge reflections from stream file and convert to mtz. """
+    taskdir = os.path.join(setup.root_dir, 'merge')
+    os.makedirs(taskdir, exist_ok=True)
+    input_stream = os.path.join(setup.root_dir, f"index/{task.tag}.stream")
+    foms = task.foms.split(" ")
+    stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, task.cell)
+    stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, min_res=task.get('min_res'), push_res=task.get('push_res'))
+    for ns in [1, task.nshells]:
+        stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
+    stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
+    stream_to_mtz.cmd_get_hkl()
+    logger.info(f'Executable written to {stream_to_mtz.tmp_exe}')
