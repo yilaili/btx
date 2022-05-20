@@ -54,3 +54,13 @@ index:
 
 stream_analysis:
   tag: 'reference_on'
+
+merge:
+  tag: 'reference_on'
+  symmetry: '2/m_uab'
+  cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/btx_elog/cco_ox-pre.cell'
+  iterations: 1
+  model: 'unity'
+  foms: 'CC Rsplit'
+  nshells: 10
+  highres: 2.0
