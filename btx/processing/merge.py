@@ -250,13 +250,13 @@ if __name__ == '__main__':
     
     params = parse_input()
     
-    stream2mtz_obj = StreamtoMtz(params.input_stream, params.symmetry, params.taskdir, params.cell)
+    stream_to_mtz = StreamtoMtz(params.input_stream, params.symmetry, params.taskdir, params.cell)
     
     if not params.report:
-        stream2mtz_obj.cmd_partialator(iterations=params.iterations, model=params.model, min_res=params.min_res, push_res=params.push_res)
+        stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, min_res=params.min_res, push_res=params.push_res)
         for ns in [1, params.nshells]:
-            stream2mtz_obj.cmd_compare_hkl(foms=params.foms, nshells=ns, highres=params.highres)
-        stream2mtz_obj.cmd_report(foms=params.foms, nshells=params.nshells)
-        stream2mtz_obj.cmd_get_hkl()
+            stream_to_mtz.cmd_compare_hkl(foms=params.foms, nshells=ns, highres=params.highres)
+        stream_to_mtz.cmd_report(foms=params.foms, nshells=params.nshells)
+        stream_to_mtz.cmd_get_hkl()
     else:
-        stream2mtz_obj.report(foms=params.foms, update_url=params.update_url)
+        stream_to_mtz.report(foms=params.foms, update_url=params.update_url)
