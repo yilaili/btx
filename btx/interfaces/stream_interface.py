@@ -178,6 +178,8 @@ class StreamInterface:
         unq_cells = self.stream_data[self.unq_inds,2:8]
         self.cell_params = np.mean(unq_cells, axis=0)
         self.cell_params[:3]*=10 # convert unit cell from nm to Angstrom    
+        self.cell_params_std = np.std(unq_cells, axis=0)
+        self.cell_params_std[:3]*=10
         
     def get_cell_parameters(self):
         """ Retrieve unit cell parameters: [a,b,c,alpha,beta,gamma] in A/degrees. """
@@ -386,38 +388,41 @@ class StreamInterface:
                 sel_chunks = np.unique(self.stream_data[all_indices[idx]][:,0]).astype(int)
                 self.copy_from_stream(infile, sel_indices, sel_chunks, output)
 
-
-def write_cell_file(input_file, output_file, cell):
-    """                                                                                                                                                                                                                                                  
-    Write a new CrystFEL-style cell file with the same lattice type as                                                                                                                                                                                   
-    the input file but cell parameters changed to input cell.                                                                                                                                                                                            
-                                                                                                                                                                                                                                                         
-    Parameters                                                                                                                                                                                                                                           
-    ----------                                                                                                                                                                                                                                           
-    input_file : str                                                                                                                                                                                                                                     
-        input CrystFEL unit cell file                                                                                                                                                                                                                    
-    output_file : str                                                                                                                                                                                                                                    
-        output CrystFEL unit cell file                                                                                                                                                                                                                   
-    cell : np.array, 1d                                                                                                                                                                                                                                  
-        unit cell parameters [a,b,c,alpha,beta,gamma], in Å/degrees                                                                                                                                                                                      
+def write_cell_file(cell, output_file, input_file=None):
     """
+    Write a new CrystFEL-style cell file with the same lattice type as
+    the input file (or primitive triclinic if none given) and the cell 
+    parameters changed to input cell.
+    
+    Parameters
+    ----------
+    cell : np.array, 1d
+        unit cell parameters [a,b,c,alpha,beta,gamma], in Å/degrees
+    output_file : str
+        output CrystFEL unit cell file
+    input_file : str
+        input CrystFEL unit cell file, optional
+    """
+    from itertools import islice
+
+    if input_file is not None:
+        with open(input_file, "r") as in_cell:
+            header = list(islice(in_cell, 4))
+    else:
+        header = ['CrystFEL unit cell file version 1.0\n',
+                  '\n',
+                  'lattice_type = triclinic\n',
+                  'centering = P\n']
+
     outfile = open(output_file, "w")
-    with open(input_file, "r") as infile:
-        for line in infile.readlines():
-            if line.startswith('a = '):
-                outfile.write(f'a = {cell[0]:.3f} A\n')
-            elif line.startswith('b = '):
-                outfile.write(f'b = {cell[1]:.3f} A\n')
-            elif line.startswith('c = '):
-                outfile.write(f'c = {cell[2]:.3f} A\n')
-            elif line.startswith('al = '):
-                outfile.write(f'al = {cell[3]:.3f} deg\n')
-            elif line.startswith('be = '):
-                outfile.write(f'be = {cell[4]:.3f} deg\n')
-            elif line.startswith('ga = '):
-                outfile.write(f'ga = {cell[5]:.3f} deg\n')
-            else:
-                outfile.write(line)
+    for item in header:
+        outfile.write(item)
+    outfile.write(f'a = {cell[0]:.3f} A\n')
+    outfile.write(f'b = {cell[1]:.3f} A\n')
+    outfile.write(f'c = {cell[2]:.3f} A\n')
+    outfile.write(f'al = {cell[3]:.3f} deg\n')
+    outfile.write(f'be = {cell[4]:.3f} deg\n')
+    outfile.write(f'ga = {cell[5]:.3f} deg\n')
     outfile.close()
 
 #### For command line use ####
