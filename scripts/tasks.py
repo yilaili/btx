@@ -156,7 +156,7 @@ def index(config):
     logger.info(f'Executable written to {indexer_obj.tmp_exe}')
 
 def stream_analysis(config):
-    from btx.interfaces.stream_interface import StreamInterface
+    from btx.interfaces.stream_interface import StreamInterface, write_cell_file
     setup = config.setup
     task = config.stream_analysis
     """ Diagnostics including cell distribution and peakogram. Concatenate streams. """
@@ -169,6 +169,9 @@ def stream_analysis(config):
         st.plot_cell_parameters(output=os.path.join(taskdir, f"figs/cell_{task.tag}.png"))
         st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
         logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
+        celldir = os.path.join(setup.root_dir, 'cell')
+        os.makedirs(celldir, exist_ok=True)
+        write_cell_file(st.cell_params, os.path.join(celldir, f"{task.tag}.cell"), input_file=setup.get('cell'))
         logger.info(f'Input stream files: {stream_files}')
         logger.info(f'Concatenating all stream files to {task.tag}.stream')
         stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
