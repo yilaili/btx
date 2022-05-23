@@ -3,6 +3,7 @@ setup:
   exp: 'mfxp22820'
   run: 57
   det_type: 'Rayonix'
+  cell: '/cds/data/psdm/mfx/mfxp22820/scratch/apeck/cell/prime.cell'
 
 fetch_mask:
   dataset: '/entry_1/data_1/mask'
@@ -55,7 +56,6 @@ stream_analysis:
 merge:
   tag: 'sample3'
   symmetry: '2/m_uab'
-  cell: '/cds/data/psdm/mfx/mfxp22820/scratch/btx/sample.cell'
   iterations: 1
   model: 'unity'
   foms: 'CC Rsplit'

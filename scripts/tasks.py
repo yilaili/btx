@@ -156,7 +156,7 @@ def index(config):
     logger.info(f'Executable written to {indexer_obj.tmp_exe}')
 
 def stream_analysis(config):
-    from btx.interfaces.stream_interface import StreamInterface
+    from btx.interfaces.stream_interface import StreamInterface, write_cell_file
     setup = config.setup
     task = config.stream_analysis
     """ Diagnostics including cell distribution and peakogram. Concatenate streams. """
@@ -166,13 +166,17 @@ def stream_analysis(config):
     st = StreamInterface(input_files=glob.glob(stream_files), cell_only=False)
     if st.rank == 0:
         logger.debug(f'Read stream files: {stream_files}')
+        st.report()
         st.plot_cell_parameters(output=os.path.join(taskdir, f"figs/cell_{task.tag}.png"))
         st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
         logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
-        logger.info(f'Input stream files: {stream_files}')
-        logger.info(f'Concatenating all stream files to {task.tag}.stream')
+        celldir = os.path.join(setup.root_dir, 'cell')
+        os.makedirs(celldir, exist_ok=True)
+        write_cell_file(st.cell_params, os.path.join(celldir, f"{task.tag}.cell"), input_file=setup.get('cell'))
+        logger.info(f'Wrote updated CrystFEL cell file to {celldir}')
         stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
         os.system(f"cat {stream_files} >> {stream_cat}")
+        logger.info(f'Concatenated all stream files to {task.tag}.stream')
         logger.debug('Done!')
 
 def merge(config):
@@ -183,8 +187,9 @@ def merge(config):
     taskdir = os.path.join(setup.root_dir, 'merge')
     os.makedirs(taskdir, exist_ok=True)
     input_stream = os.path.join(setup.root_dir, f"index/{task.tag}.stream")
+    cellfile = os.path.join(setup.root_dir, f"cell/{task.tag}.cell")
     foms = task.foms.split(" ")
-    stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, task.cell)
+    stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile)
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, min_res=task.get('min_res'), push_res=task.get('push_res'))
     for ns in [1, task.nshells]:
         stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))

@@ -6,6 +6,7 @@ from mpi4py import MPI
 import glob
 import argparse
 import os
+import requests
 
 class StreamInterface:
     
@@ -13,6 +14,7 @@ class StreamInterface:
         self.cell_only = cell_only # bool, if True only extract unit cell params
         self.input_files = input_files # list of stream file(s)
         self.stream_data, self.file_limits = self.read_all_streams(self.input_files)
+        self.compute_mean_cell()
     
     def read_all_streams(self, input_files):
         """
@@ -156,6 +158,30 @@ class StreamInterface:
                 
         return single_stream_data
     
+    def compute_mean_cell(self):
+        """ 
+        Compute the mean unit cell parameters: [a,b,c,alpha,beta,gamma] in A/degrees. 
+        Since the crystal number column (self.stream_data[:,1]) resets to 0 for each
+        input stream file, a self.ncryst variable is also created to track the crystal 
+        index, ignoring which file each data entry comes from.
+        """
+
+        ncryst = self.stream_data[:,1].copy()
+        next_cryst_idx = np.where(np.diff(ncryst)<0)[0] + 1
+        next_cryst_idx = np.append(next_cryst_idx, np.array(len(ncryst)))
+        ncryst_to_add = ncryst[next_cryst_idx-1]
+
+        for idx in range(len(next_cryst_idx)-1):
+            ncryst[next_cryst_idx[idx]:] += ncryst_to_add[idx] + 1
+        self.ncryst=ncryst
+
+        unq_vals, self.unq_inds = np.unique(self.ncryst, return_index=True)
+        unq_cells = self.stream_data[self.unq_inds,2:8]
+        self.cell_params = np.mean(unq_cells, axis=0)
+        self.cell_params[:3]*=10 # convert unit cell from nm to Angstrom    
+        self.cell_params_std = np.std(unq_cells, axis=0)
+        self.cell_params_std[:3]*=10
+        
     def get_cell_parameters(self):
         """ Retrieve unit cell parameters: [a,b,c,alpha,beta,gamma] in A/degrees. """
         return self.stream_data[:,2:8] * np.array([10.,10.,10.,1,1,1])
@@ -258,21 +284,19 @@ class StreamInterface:
         output : string, default=None
             if supplied, path for saving png of unit cell parameters
         """
-        unq_vals, unq_inds = np.unique(self.stream_data[:,0], return_index=True)
-        
         f, ((ax1,ax2,ax3),(ax4,ax5,ax6)) = plt.subplots(2,3,figsize=(12,5))
 
         labels = ["$a$", "$b$", "$c$", r"$\alpha$", r"$\beta$", r"$\gamma$"]
         for i,ax in enumerate([ax1,ax2,ax3,ax4,ax5,ax6]):
             scale=10
             if i>2: scale=1
-            vals = scale*self.stream_data[unq_inds,i+2] # first two cols are chunk,crystal
+            vals = scale*self.stream_data[self.unq_inds,i+2] # first two cols are chunk,crystal
             ax.hist(vals, bins=100, color='black')
 
             if i<3:
-                ax.set_title(labels[i] + f"={np.median(vals):.3f}" + " ${\mathrm{\AA}}$")
+                ax.set_title(labels[i] + f"={np.mean(vals):.3f}" + " ${\mathrm{\AA}}$")
             else:
-                ax.set_title(labels[i] + f"={np.median(vals):.3f}" + "$^{\circ}$")
+                ax.set_title(labels[i] + f"={np.mean(vals):.3f}" + "$^{\circ}$")
             if i == 0 or i == 3:
                 ax.set_ylabel("No. crystals")
 
@@ -280,6 +304,28 @@ class StreamInterface:
         
         if output is not None:
             f.savefig(output, dpi=300)
+
+    def report(self, update_url=None):
+        """
+        Summarize the cell parameters and optionally report to the elog.
+    
+        Parameters
+        ----------
+        update_url : str
+            elog URL for posting progress update
+        """
+        # write summary file
+        summary_file = os.path.join(os.path.dirname(self.input_files[0]), "stream.summary")
+        with open(summary_file, 'w') as f:
+            f.write("Cell mean: " + " ".join(f"{self.cell_params[i]:.3f}" for i in range(self.cell_params.shape[0])) + "\n")
+            f.write("Cell std: " + " ".join(f"{self.cell_params_std[i]:.3f}" for i in range(self.cell_params.shape[0])) + "\n")
+                        
+        # report to elog
+        update_url = os.environ.get('JID_UPDATE_COUNTERS')
+        if update_url is not None:
+            labels = ["a", "b", "c", "alpha", "beta", "gamma"]
+            elog_json = [{"key": labels[i], "value": f"{self.cell_params[i]:.3f} +/- {self.cell_params_std[i]:.3f}"} for i in range(len(labels))]
+            requests.post(update_url, json=elog_json)
     
     def copy_from_stream(self, stream_file, indices, indices_chunks, output):
         """
@@ -364,7 +410,44 @@ class StreamInterface:
                 print(f"Copying {len(sel_indices)} chunks (or reflections) from file {infile}")
                 sel_chunks = np.unique(self.stream_data[all_indices[idx]][:,0]).astype(int)
                 self.copy_from_stream(infile, sel_indices, sel_chunks, output)
-                
+
+def write_cell_file(cell, output_file, input_file=None):
+    """
+    Write a new CrystFEL-style cell file with the same lattice type as
+    the input file (or primitive triclinic if none given) and the cell 
+    parameters changed to input cell.
+    
+    Parameters
+    ----------
+    cell : np.array, 1d
+        unit cell parameters [a,b,c,alpha,beta,gamma], in Å/degrees
+    output_file : str
+        output CrystFEL unit cell file
+    input_file : str
+        input CrystFEL unit cell file, optional
+    """
+    from itertools import islice
+
+    if input_file is not None:
+        with open(input_file, "r") as in_cell:
+            header = list(islice(in_cell, 4))
+    else:
+        header = ['CrystFEL unit cell file version 1.0\n',
+                  '\n',
+                  'lattice_type = triclinic\n',
+                  'centering = P\n']
+
+    outfile = open(output_file, "w")
+    for item in header:
+        outfile.write(item)
+    outfile.write(f'a = {cell[0]:.3f} A\n')
+    outfile.write(f'b = {cell[1]:.3f} A\n')
+    outfile.write(f'c = {cell[2]:.3f} A\n')
+    outfile.write(f'al = {cell[3]:.3f} deg\n')
+    outfile.write(f'be = {cell[4]:.3f} deg\n')
+    outfile.write(f'ga = {cell[5]:.3f} deg\n')
+    outfile.close()
+
 #### For command line use ####
             
 def parse_input():
@@ -386,3 +469,4 @@ if __name__ == '__main__':
         st.plot_cell_parameters(output=os.path.join(params.outdir, "cell_distribution.png"))
         if not params.cell_only:
             st.plot_peakogram(output=os.path.join(params.outdir, "peakogram.png"))
+        st.report(output=os.path.join(params.outdir, "cell.summary"))
