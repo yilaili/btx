@@ -102,6 +102,47 @@ def modify_crystfel_header(input_file, output_file):
                 outfile.write(line)
 
     outfile.close()
+
+def offset_geom(input_file, output_file, dx, dy, dz):
+    """
+    Modify the geometry in an input geom file by changing the center 
+    and coffset distance. Currently the same adjustments are applied
+    to all panels.
+    
+    Parameters
+    ----------
+    input_file : str
+        input CrystFEL geom file
+    output_file : str
+        output geom file with updated metrology
+    dx : float
+        delta to adjust corner_x value by for all panels in pixels
+    dy : float
+        delta to adjust corner_y value by for all panels in pixels
+    dz : float
+        delta to adjust coffset value by for all panels in meters
+    """
+    outfile = open(output_file, "w")
+
+    with open(input_file, "r") as infile:
+        for line in infile.readlines():
+
+            if 'coffset' in line:
+                coffset = float(line.split('=')[1])
+                outfile.write(f"{line.split('=')[0]} = {coffset+dz}\n")
+
+            elif 'corner_x' in line:
+                corner_x = float(line.split('=')[1])
+                outfile.write(f"{line.split('=')[0]} = {corner_x+dx}\n")
+
+            elif 'corner_y' in line:
+                corner_y = float(line.split('=')[1])
+                outfile.write(f"{line.split('=')[0]} = {corner_y+dy}\n")
+
+            else:
+                outfile.write(line)
+            
+    outfile.close()
     
 def generate_geom_file(exp, run, det_type, input_file, output_file, det_dist=None):
     """
