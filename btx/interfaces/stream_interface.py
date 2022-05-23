@@ -6,6 +6,7 @@ from mpi4py import MPI
 import glob
 import argparse
 import os
+import requests
 
 class StreamInterface:
     
@@ -303,6 +304,28 @@ class StreamInterface:
         
         if output is not None:
             f.savefig(output, dpi=300)
+
+    def report(self, update_url=None):
+        """
+        Summarize the cell parameters and optionally report to the elog.
+    
+        Parameters
+        ----------
+        update_url : str
+            elog URL for posting progress update
+        """
+        # write summary file
+        summary_file = os.path.join(os.path.dirname(self.input_files[0]), "stream.summary")
+        with open(summary_file, 'w') as f:
+            f.write("Cell mean: " + " ".join(f"{self.cell_params[i]:.3f}" for i in range(self.cell_params.shape[0])) + "\n")
+            f.write("Cell std: " + " ".join(f"{self.cell_params_std[i]:.3f}" for i in range(self.cell_params.shape[0])) + "\n")
+                        
+        # report to elog
+        update_url = os.environ.get('JID_UPDATE_COUNTERS')
+        if update_url is not None:
+            labels = ["a", "b", "c", "alpha", "beta", "gamma"]
+            elog_json = [{"key": labels[i], "value": f"{self.cell_params[i]:.3f} +/- {self.cell_params_std[i]:.3f}"} for i in range(len(labels))]
+            requests.post(update_url, json=elog_json)
     
     def copy_from_stream(self, stream_file, indices, indices_chunks, output):
         """
@@ -446,3 +469,4 @@ if __name__ == '__main__':
         st.plot_cell_parameters(output=os.path.join(params.outdir, "cell_distribution.png"))
         if not params.cell_only:
             st.plot_peakogram(output=os.path.join(params.outdir, "peakogram.png"))
+        st.report(output=os.path.join(params.outdir, "cell.summary"))

@@ -166,16 +166,17 @@ def stream_analysis(config):
     st = StreamInterface(input_files=glob.glob(stream_files), cell_only=False)
     if st.rank == 0:
         logger.debug(f'Read stream files: {stream_files}')
+        st.report()
         st.plot_cell_parameters(output=os.path.join(taskdir, f"figs/cell_{task.tag}.png"))
         st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
         logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
         celldir = os.path.join(setup.root_dir, 'cell')
         os.makedirs(celldir, exist_ok=True)
         write_cell_file(st.cell_params, os.path.join(celldir, f"{task.tag}.cell"), input_file=setup.get('cell'))
-        logger.info(f'Input stream files: {stream_files}')
-        logger.info(f'Concatenating all stream files to {task.tag}.stream')
+        logger.info(f'Wrote updated CrystFEL cell file to {celldir}')
         stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
         os.system(f"cat {stream_files} >> {stream_cat}")
+        logger.info(f'Concatenated all stream files to {task.tag}.stream')
         logger.debug('Done!')
 
 def merge(config):
