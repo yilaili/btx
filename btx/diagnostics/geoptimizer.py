@@ -1,23 +1,34 @@
 import numpy as np
+import argparse
 import itertools
 import subprocess
+import sys
 import os
 import time
 import yaml
 from btx.misc.shortcuts import AttrDict
 from btx.misc.metrology import offset_geom
 from btx.interfaces.stream_interface import *
+from btx.processing.merge import wrangle_shells_dat
 
 class Geoptimizer:
     """
     Class for refining the geometry. 
     """
-    def __init__(self, task_dir, scan_dir, input_geom, runs, dx_scan, dy_scan, dz_scan):
-        self.runs = runs # run(s) to process
-        self.task_dir = task_dir # path to indexing directory
-        self.scan_dir = scan_dir # path to scan directory
+    def __init__(self, queue, task_dir, scan_dir, runs, input_geom, dx_scan, dy_scan, dz_scan):
+        
+        self.queue = queue # queue to submit jobs to, str
+        self.task_dir = task_dir # path to indexing directory, str
+        self.scan_dir = scan_dir # path to scan directory, str
+        self.runs = runs # run(s) to process, array
+        
+        self.timeout = 3600 # number of seconds to allow sbatch'ed jobs to run before exiting, float
+        self.frequency = 5 # frequency in seconds to check on job completion, float
+        self.crystfel_export="export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH" 
+        
         self._write_geoms(input_geom, dx_scan, dy_scan, dz_scan)
-        self.metrics = dict()
+        self.logdir = os.path.join(self.scan_dir, "log")
+        os.makedirs(self.logdir, exist_ok=True)
         
     def _write_geoms(self, input_geom, dx_scan, dy_scan, dz_scan):
         """
@@ -37,40 +48,67 @@ class Geoptimizer:
         os.makedirs(os.path.join(self.scan_dir, "geom"), exist_ok=True)
         shifts_list = np.array(list(itertools.product(dx_scan,dy_scan,dz_scan)))
 
-        self.d_geom = dict()
         for i,deltas in enumerate(shifts_list):
             output_geom = os.path.join(self.scan_dir, f"geom/shift{i}.geom")
             offset_geom(input_geom, output_geom, deltas[0], deltas[1], deltas[2])
-            self.d_geom[output_geom] = deltas
             
-    def _check_for_completion(self, jobnames):
+        self.scan_results = np.zeros((len(shifts_list), 12))
+        self.scan_results[:,:3] = shifts_list
+        self.cols = ['dx', 'dy', 'dz']
+            
+    def _submit_bash_file(self, jobfile, jobname, command):
         """
-        Check whether the jobs listed in jobnames have finished.
+        Submit a job submission script to run input command.
         
         Parameters
         ----------
-        jobnames : list of str
-            names of jobs whose status to query
-            
-        Returns
-        -------
-        jobnames : list of str
-            names of jobs still running on queue
+        jobfile : str
+            path to submission script
+        jobname : str
+            name of job to submit
+        command : str
+            bash command to run
         """
-        for job in jobnames:
-            process = subprocess.Popen([f'sacct --name {job} -X -n -o state'],
-                           stdout = subprocess.PIPE, 
-                           stderr = subprocess.PIPE,
-                           text = True,
-                           shell = True)
+        with open(jobfile, "w") as fh:
+            fh.writelines("#!/bin/bash\n")
+            fh.writelines(f"#SBATCH -p {self.queue}\n")
+            fh.writelines(f"#SBATCH --job-name={jobname}\n")
+            fh.writelines(f"#SBATCH --output={self.logdir}/{jobname}.out\n")
+            fh.writelines(f"#SBATCH --output={self.logdir}/{jobname}.err\n")
+            fh.writelines("#SBATCH --time=0:30:00\n")
+            fh.writelines("#SBATCH --exclusive\n")
+            fh.writelines(f"{self.crystfel_export}\n")
+            fh.writelines(f"{command}\n")
+        
+        os.system(f"sbatch {jobfile}")
 
-            std_out, std_err = process.communicate()
-            if 'COMPLETED' in std_out and 'RUNNING' not in std_out:
-                jobnames.remove(job)
-                
-        return jobnames
-            
-    def launch_indexing(self, params, ncores_per_job=4, queue='psanaq'):
+    def check_status(self, statusfile, jobnames, debug=False):
+        """
+        Check whether all launched jobs have completed.
+        
+        Parameters
+        ----------
+        statusfile : str
+            path to file that lists completed jobnames
+        jobnames : list of str
+            list of all jobnames launched
+        """
+        done = False
+        start_time = time.time()
+        
+        while time.time() - start_time < self.timeout:
+            if os.path.exists(statusfile) and not done:
+                with open(statusfile, "r") as f:
+                    lines = f.readlines()
+                    lines = [l.strip('\n') for l in lines]
+                    if set([l.strip('\n') for l in lines]) == set(jobnames):
+                        print(f"All done: {lines}")
+                        done = True
+                        os.remove(statusfile)
+                        break
+                time.sleep(self.frequency)
+        
+    def launch_indexing(self, params, ncores_per_job=4):
         """
         Launch indexing jobs.
         
@@ -80,88 +118,181 @@ class Geoptimizer:
             config.index object containing indexing parameters
         n_cores_per_job : int
             number of cores per indexing job
-        queue : str
-            queue for submitting indexing jobs
-        """
-        
-        logdir = os.path.join(self.scan_dir, "log")
-        os.makedirs(logdir, exist_ok=True)
-        crystfel_export="export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH"
-        jobnames = list()
-        
+        """      
+        jobnames = list()        
+        statusfile = os.path.join(self.scan_dir,"status.sh")
+
         for run in self.runs:
             
             os.makedirs(os.path.join(self.scan_dir, f"r{run:04}"), exist_ok=True)
             lst_file = os.path.join(self.task_dir ,f'r{run:04}/r{run:04}.lst')
             
-            for num,gfile in enumerate(self.d_geom.keys()):
+            for num in range(self.scan_results.shape[0]):
                 
                 jobname = f"r{run}_g{num}"
-                job_file = os.path.join(self.scan_dir,"temp.sh")
+                jobfile = os.path.join(self.scan_dir,"temp.sh")
                 stream = os.path.join(self.scan_dir, f'r{run:04}/r{run:04}_g{num}.stream')
+                gfile = os.path.join(self.scan_dir, f"geom/shift{num}.geom")
                 
                 command=f"indexamajig -i {lst_file} -o {stream} -j {ncores_per_job} -g {gfile} --peaks=cxi --int-rad={params.int_radius} --indexing={params.methods} --tolerance={params.tolerance}"
                 if params.cell is not None: command += f' --pdb={params.cell}'
                 if params.no_revalidate: command += ' --no-revalidate'
                 if params.multi: command += ' --multi'
                 if params.profile: command += ' --profile'
-
-                with open(job_file, "w") as fh:
-                    fh.writelines("#!/bin/bash\n")
-                    fh.writelines(f"#SBATCH -p {queue}\n")
-                    fh.writelines(f"#SBATCH --job-name={jobname}\n")
-                    fh.writelines(f"#SBATCH --output={logdir}/{jobname}.out\n")
-                    fh.writelines(f"#SBATCH --output={logdir}/{jobname}.err\n")
-                    fh.writelines("#SBATCH --time=0:30:00\n")
-                    fh.writelines("#SBATCH --exclusive\n")
-                    fh.writelines(f"{crystfel_export}\n")
-                    fh.writelines(f"{command}\n")
-                    
-                os.system("sbatch %s" %job_file)
-                jobnames.append(jobname)
+                command += '\n'
                 
-        t = time.time()
-        while True:
-            if time.time() - t > 5*3600:
-                break
-            jobnames = self._check_for_completion(jobnames)
-            if len(jobnames) == 0:
-                print("All indexing jobs completed!")
-                break
-            time.sleep(5)                
+                command += f"echo {jobname} | tee -a {statusfile}\n"
 
-    def perform_stream_analysis(self, cell_file):
+                self._submit_bash_file(jobfile, jobname, command)
+                jobnames.append(jobname)
+         
+        self.check_status(statusfile, jobnames)
+
+    def launch_stream_analysis(self, cell_file):
         """
+        Compute the number of indexed crystals and standard deviations of unit
+        cell parameters and concatenate, with one stream file per geometry file. 
         
+        Parameters
+        ----------
+        cell_file : str
+            path to cell file used during indexing
         """
         celldir = os.path.join(self.scan_dir, "cell")
         os.makedirs(celldir, exist_ok=True)
 
-        for num,gfile in enumerate(self.d_geom.keys()):
-            stream_files = [os.path.join(self.scan_dir, f"r{run:04}/r{run:04}_g{num}.stream") for run in self.runs]
-            st = StreamInterface(stream_files, cell_only=True)
+        for num in range(self.scan_results.shape[0]):
+            #stream_files = [os.path.join(self.scan_dir, f"r{run:04}/r{run:04}_g{num}.stream") for run in self.runs]
+            stream_files = os.path.join(self.scan_dir, f"r*/r*_g{num}.stream")
+            st = StreamInterface(glob.glob(stream_files), cell_only=True)
             write_cell_file(st.cell_params, os.path.join(celldir, f"g{num}.cell"), input_file=cell_file)
-            self.metrics[gfile] = np.append(np.array(len(st.unq_inds)), st.cell_params_std) # num indexed, cell std devs
             stream_cat = os.path.join(self.scan_dir, f'g{num}.stream')
             os.system(f"cat {stream_files} >> {stream_cat}")
+            
+            self.scan_results[num,3:10] = np.append(np.array(len(st.unq_inds)), st.cell_params_std) # num indexed, cell std devs
+        
+        self.cols.extend(['n_indexed', 'a', 'b', 'c', 'alpha', 'beta', 'gamma'])
+            
+    def launch_merging(self, params, ncores_per_job=4):
+        """
+        Launch merging and hkl stats jobs.
+        
+        Parameters
+        ----------
+        params : btx.misc.shortcuts.AttrDict
+            config.merge dictinoary containing merging parameters
+        n_cores_per_job : int
+            number of cores per indexing job
+        queue : str
+            queue for submitting indexing jobs
+        """
+        mergedir = os.path.join(self.scan_dir, "merge")
+        os.makedirs(mergedir, exist_ok=True)
+
+        jobnames = list()
+        statusfile = os.path.join(self.scan_dir,"status.sh")
+        
+        for num in range(self.scan_results.shape[0]):
+                
+            jobname = f"g{num}"
+            jobfile = os.path.join(self.scan_dir,"temp.sh")
+            instream = os.path.join(self.scan_dir, f'g{num}.stream')
+            outhkl = os.path.join(mergedir, f"g{num}.hkl")
+            cellfile = os.path.join(self.scan_dir, f"cell/g{num}.cell")
+            
+            command=f"partialator -j {ncores_per_job} -i {instream} -o {outhkl} --iterations={params.iterations} -y {params.symmetry} --model={params.model}"
+            if params.get('min_res') is not None:
+                command += f" --min-res={min_res}"
+                if params.get('push_res') is not None:
+                    command += f" --push-res={push_res}"
+            command += '\n'
+            
+            for fom in params.foms.split(' '):
+                shell_file = os.path.join(mergedir, f"g{num}_{fom}.dat")
+                command += f'compare_hkl -y {params.symmetry} --fom {fom} {outhkl}1 {outhkl}2 -p {cellfile} --shell-file={shell_file} --nshells=1'
+                if params.get('highres') is not None:
+                    command += f" --highres={params.highres}"
+                command += '\n'
+            
+            command += f"echo {jobname} >> {statusfile}\n"
+
+            self._submit_bash_file(jobfile, jobname, command)
+            jobnames.append(jobname)
+            time.sleep(self.frequency)
+            
+        self.check_status(statusfile, jobnames, debug=True)
+        self.extract_stats(mergedir, params.foms.split(' '))
+        
+    def extract_stats(self, mergedir, foms):
+        """
+        Extract the overall figure of merit statistics.
+        
+        Parameters
+        ----------
+        mergedir : str
+            directory containing results of crystfel's compare_hkl
+        foms : list of str
+            figures of merit that were calculated
+        """
+        for col,fom in enumerate(foms):
+            self.cols.append(fom)
+            overall_stat = np.zeros(self.scan_results.shape[0])
+            
+            for num in range(self.scan_results.shape[0]):
+                shells_file = os.path.join(mergedir, f"g{num}_{fom}.dat")
+                fom_from_shell_file, stat = wrangle_shells_dat(shells_file)
+                overall_stat[num] = stat
+            self.scan_results[:,10+col] = overall_stat
+
+    def save_results(self, savepath=None):
+        """
+        Save the results of the scan to a text file.
+
+        Parameters
+        ----------
+        savepath : str
+            text file to save results to
+        """
+        if savepath is None:
+            savepath = os.path.join(self.scan_dir, "results.txt")
+
+        fmt=['%.2f', '%.2f', '%.4f', '%d', '%.5f', '%.5f', '%.5f', '%.5f', '%.5f', '%.5f', '%.2f', '%.2f']
+        np.savetxt(savepath, self.scan_results, header=' '.join(self.cols), fmt=fmt)
+
+def parse_input():
+    """
+    Parse command line input.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', required=True, type=str, help='Config file in yaml format')
+    parser.add_argument('-g', '--geom', required=True, type=str, help='CrystFEL .geom file with starting metrology')
+    parser.add_argument('-q', '--queue', required=True, type=str, help='Queue to submit jobs to')
+    parser.add_argument('--runs', required=True, type=int, nargs=2, help='Runs to process: [start,end)')
+    parser.add_argument('--dx', required=True, type=float, nargs=3, help='xoffset translational scan in pixels: start, stop, n_points')
+    parser.add_argument('--dy', required=True, type=float, nargs=3, help='yoffset translational scan in pixels: start, stop, n_points')
+    parser.add_argument('--dz', required=True, type=float, nargs=3, help='coffset (distance) scan in mm: start, stop, n_points')
+    
+    return parser.parse_args()
 
 if __name__ == '__main__':
 
-    dx = np.arange(-0.5,0.5,0.5)
-    dy = np.arange(-0.005,0.005,0.005)
-    dz = np.arange(-0.005,0.005,0.005)
-
-    task_dir = "/cds/data/psdm/mfx/mfxp22820/scratch/apeck/index"
-    scan_dir = "/cds/data/psdm/mfx/mfxp22820/scratch/apeck/scan"
-    input_geom = "/cds/data/psdm/mfx/mfxp22820/scratch/apeck/geom/r0057.geom"
-
-    config_filepath = "/cds/home/a/apeck/btx/tutorial/ap_mfxp22820.yaml"
-    with open(config_filepath, "r") as config_file:
+    params = parse_input()
+    with open(params.config, "r") as config_file:
         config = AttrDict(yaml.safe_load(config_file))
 
-    geopt = Geoptimizer(task_dir, scan_dir, input_geom, np.arange(26,28), dx, dy, dz)
-    geopt.launch_indexing(config.index, queue='ffbh3q')
-    geopt.perform_stream_analysis(config.index.cell)
+    taskdir = os.path.join(config.setup.root_dir, "index")
+    scandir = os.path.join(config.setup.root_dir, "scan")
+    os.makedirs(scandir, exist_ok=True)
 
-    for key,val in geopt.metrics.items():
-        print(key,val,"\n")
+    geopt = Geoptimizer(params.queue,
+                        taskdir,
+                        scandir,
+                        np.arange(params.runs[0], params.runs[1]),
+                        params.geom,
+                        np.linspace(params.dx[0], params.dx[1], int(params.dx[2])),
+                        np.linspace(params.dy[0], params.dy[1], int(params.dy[2])),
+                        np.linspace(params.dz[0], params.dz[1], int(params.dz[2])))
+    geopt.launch_indexing(config.index)
+    geopt.launch_stream_analysis(config.index.cell)
+    geopt.launch_merging(config.merge)
+    geopt.save_results()
