@@ -22,7 +22,7 @@ class Geoptimizer:
         self.scan_dir = scan_dir # path to scan directory, str
         self.runs = runs # run(s) to process, array
         
-        self.timeout = 3600 # number of seconds to allow sbatch'ed jobs to run before exiting, float
+        self.timeout = 64800 # number of seconds to allow sbatch'ed jobs to run before exiting, float
         self.frequency = 5 # frequency in seconds to check on job completion, float
         self.crystfel_export="export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH" 
         
@@ -145,7 +145,8 @@ class Geoptimizer:
 
                 self._submit_bash_file(jobfile, jobname, command)
                 jobnames.append(jobname)
-         
+                #time.sleep(self.frequency)
+
         self.check_status(statusfile, jobnames)
 
     def launch_stream_analysis(self, cell_file):
