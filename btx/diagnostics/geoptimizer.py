@@ -2,6 +2,7 @@ import numpy as np
 import argparse
 import itertools
 import subprocess
+import glob
 import sys
 import os
 import time
@@ -98,16 +99,18 @@ class Geoptimizer:
         
         while time.time() - start_time < self.timeout:
             if os.path.exists(statusfile) and not done:
+
                 with open(statusfile, "r") as f:
                     lines = f.readlines()
-                    lines = [l.strip('\n') for l in lines]
-                    if set([l.strip('\n') for l in lines]) == set(jobnames):
-                        print(f"All done: {lines}")
+                    finished = [l.strip('\n') for l in lines]
+                    if set(finished) == set(jobnames):
+                        print(f"All done: {jobnames}")
                         done = True
                         os.remove(statusfile)
-                        break
+                        time.sleep(self.frequency*5)
+                        break                    
                 time.sleep(self.frequency)
-        
+
     def launch_indexing(self, params, ncores_per_job=4):
         """
         Launch indexing jobs.
@@ -145,7 +148,6 @@ class Geoptimizer:
 
                 self._submit_bash_file(jobfile, jobname, command)
                 jobnames.append(jobname)
-                #time.sleep(self.frequency)
 
         self.check_status(statusfile, jobnames)
 
@@ -163,7 +165,6 @@ class Geoptimizer:
         os.makedirs(celldir, exist_ok=True)
 
         for num in range(self.scan_results.shape[0]):
-            #stream_files = [os.path.join(self.scan_dir, f"r{run:04}/r{run:04}_g{num}.stream") for run in self.runs]
             stream_files = os.path.join(self.scan_dir, f"r*/r*_g{num}.stream")
             st = StreamInterface(glob.glob(stream_files), cell_only=True)
             write_cell_file(st.cell_params, os.path.join(celldir, f"g{num}.cell"), input_file=cell_file)
@@ -189,6 +190,11 @@ class Geoptimizer:
         """
         mergedir = os.path.join(self.scan_dir, "merge")
         os.makedirs(mergedir, exist_ok=True)
+        for file_extension in ["*.hkl*", "*.dat"]:
+            filelist = glob.glob(os.path.join(mergedir, file_extension))
+            if len(filelist) > 0:
+                for filename in filelist:
+                    os.remove(filename)
 
         jobnames = list()
         statusfile = os.path.join(self.scan_dir,"status.sh")
@@ -214,8 +220,9 @@ class Geoptimizer:
                 if params.get('highres') is not None:
                     command += f" --highres={params.highres}"
                 command += '\n'
-            
-            command += f"echo {jobname} >> {statusfile}\n"
+
+            command += f"echo {jobname} | tee -a {statusfile}\n"
+            #command += f"echo {jobname} >> {statusfile}\n"
 
             self._submit_bash_file(jobfile, jobname, command)
             jobnames.append(jobname)
@@ -269,9 +276,10 @@ def parse_input():
     parser.add_argument('-g', '--geom', required=True, type=str, help='CrystFEL .geom file with starting metrology')
     parser.add_argument('-q', '--queue', required=True, type=str, help='Queue to submit jobs to')
     parser.add_argument('--runs', required=True, type=int, nargs=2, help='Runs to process: [start,end)')
-    parser.add_argument('--dx', required=True, type=float, nargs=3, help='xoffset translational scan in pixels: start, stop, n_points')
-    parser.add_argument('--dy', required=True, type=float, nargs=3, help='yoffset translational scan in pixels: start, stop, n_points')
-    parser.add_argument('--dz', required=True, type=float, nargs=3, help='coffset (distance) scan in mm: start, stop, n_points')
+    parser.add_argument('--dx', required=False, type=float, nargs=3, default=[0,0,1], help='xoffset translational scan in pixels: start, stop, n_points')
+    parser.add_argument('--dy', required=False, type=float, nargs=3, default=[0,0,1], help='yoffset translational scan in pixels: start, stop, n_points')
+    parser.add_argument('--dz', required=False, type=float, nargs=3, default=[0,0,1], help='coffset (distance) scan in mm: start, stop, n_points')
+    parser.add_argument('--merge_only', help='Runs already indexed; perform merging only', action='store_true')
     
     return parser.parse_args()
 
@@ -293,7 +301,8 @@ if __name__ == '__main__':
                         np.linspace(params.dx[0], params.dx[1], int(params.dx[2])),
                         np.linspace(params.dy[0], params.dy[1], int(params.dy[2])),
                         np.linspace(params.dz[0], params.dz[1], int(params.dz[2])))
-    geopt.launch_indexing(config.index)
-    geopt.launch_stream_analysis(config.index.cell)
+    if not params.merge_only:
+        geopt.launch_indexing(config.index)
+        geopt.launch_stream_analysis(config.index.cell)
     geopt.launch_merging(config.merge)
     geopt.save_results()
