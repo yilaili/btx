@@ -266,4 +266,4 @@ if __name__ == '__main__':
         stream_to_mtz.cmd_report(foms=params.foms, nshells=params.nshells)
         stream_to_mtz.cmd_get_hkl()
     else:
-        stream_to_mtz.report(foms=params.foms, update_url=params.update_url)
+        stream_to_mtz.report(foms=params.foms, nshells=params.nshells, update_url=params.update_url)
