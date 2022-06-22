@@ -37,7 +37,7 @@ class RunDiagnostics:
         """
         if not self.powders:
             for key in ['sum', 'sqr', 'max']:
-                self.powders[key] = img
+                self.powders[key] = img.copy()
         else:
             self.powders['sum'] += img
             self.powders['sqr'] += np.square(img)
