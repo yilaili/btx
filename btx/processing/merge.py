@@ -92,7 +92,7 @@ class StreamtoMtz:
                 f.write(f"{command}\n")
             print(f"Merging executable written to {self.tmp_exe}")
             
-    def cmd_compare_hkl(self, foms=['CC','Rsplit'], nshells=10, highres=None):
+    def cmd_compare_hkl(self, foms=['CCstar','Rsplit'], nshells=10, highres=None):
         """
         Run compare_hkl on half-sets to compute the dataset's figures of merit.
 
@@ -116,7 +116,7 @@ class StreamtoMtz:
                     f.write(f"{command}\n")
                 print(f"Calculation for FOM {fom} appended to {self.tmp_exe}")
 
-    def cmd_report(self, foms=['CC','Rsplit'], nshells=10):
+    def cmd_report(self, foms=['CCstar','Rsplit'], nshells=10):
         """
         Append a line to the executable to report and plot the results. 
         
@@ -133,18 +133,26 @@ class StreamtoMtz:
             with open(self.tmp_exe, 'a') as f:
                 f.write(f"{command_report}\n")
                 
-    def cmd_get_hkl(self):
+    def cmd_get_hkl(self, highres=None):
         """
         Convert hkl to mtz format using CrystFEL's get_hkl tool:
         https://www.desy.de/~twhite/crystfel/manual-get_hkl.html
+
+        Parameters
+        ----------
+        highres : float
+            high-resolution cut-off in Angstroms
         """
         outmtz = os.path.join(self.taskdir, f"{self.prefix}.mtz")
         if self.rank == 0:
             command = f"get_hkl -i {self.outhkl} -o {outmtz} -p {self.cell} --output-format=mtz"
+            if highres is not None:
+                command += f" --highres={highres}"
+
             with open(self.tmp_exe, 'a') as f:
                 f.write(f"{command}\n")
         
-    def report(self, foms=['CC','Rsplit'], nshells=10, update_url=None):
+    def report(self, foms=['CCstar','Rsplit'], nshells=10, update_url=None):
         """
         Summarize results: plot figures of merit and optionally report to elog.
         
@@ -162,7 +170,7 @@ class StreamtoMtz:
             overall_foms = {}
             for fom in foms:
                 for ns in [1, nshells]:
-                    shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}_n{ns}.dat")
+                    shell_file = os.path.join(self.hkl_dir, f"{self.prefix}_{fom}_n{int(ns)}.dat")
                     if ns != 1:
                         plot_file = os.path.join(self.fig_dir, f"{self.prefix}_{fom}.png")
                         wrangle_shells_dat(shell_file, plot_file)
@@ -246,7 +254,7 @@ def parse_input():
     parser.add_argument('--push_res', required=False, type=float, help='Maximum resolution beyond min_res for reflection to be merged')
     # arguments related to computing figures of merit and reporting
     parser.add_argument('--foms', required=False, type=str, nargs='+', help='Figures of merit to calculate')
-    parser.add_argument('--nshells', required=False, type=float, default=10, help='Number of resolution shells for computing figures of merit')
+    parser.add_argument('--nshells', required=False, type=int, default=10, help='Number of resolution shells for computing figures of merit')
     parser.add_argument('--highres', required=False, type=float, help='High resolution limit for computing figures of merit') 
     parser.add_argument('--report', help='Report indexing results to summary file and elog', action='store_true')
     parser.add_argument('--update_url', help='URL for communicating with elog', required=False, type=str)
@@ -264,6 +272,6 @@ if __name__ == '__main__':
         for ns in [1, params.nshells]:
             stream_to_mtz.cmd_compare_hkl(foms=params.foms, nshells=ns, highres=params.highres)
         stream_to_mtz.cmd_report(foms=params.foms, nshells=params.nshells)
-        stream_to_mtz.cmd_get_hkl()
+        stream_to_mtz.cmd_get_hkl(highres=params.highres)
     else:
         stream_to_mtz.report(foms=params.foms, nshells=params.nshells, update_url=params.update_url)
