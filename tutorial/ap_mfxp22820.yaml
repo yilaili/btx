@@ -1,7 +1,7 @@
 setup:
   root_dir: '/cds/data/psdm/mfx/mfxp22820/scratch/apeck'
   exp: 'mfxp22820'
-  run: 57
+  run: 10
   det_type: 'Rayonix'
   cell: '/cds/data/psdm/mfx/mfxp22820/scratch/apeck/cell/prime.cell'
 
@@ -41,23 +41,23 @@ find_peaks:
   nsigm: 10.0
 
 index:
-  tag: 'sample3'
+  tag: 'sample2'
   int_radius: '3,4,5'
   methods: 'mosflm'
-  cell: '/cds/data/psdm/mfx/mfxp22820/scratch/btx/sample.cell'
+  cell: '/cds/data/psdm/mfx/mfxp22820/scratch/apeck/cell/prime.cell'
   tolerance: '5,5,5,1.5'
   no_revalidate: True
   multi: True
   profile: True
 
 stream_analysis:
-  tag: 'sample3'
+  tag: 'sample2'
 
 merge:
-  tag: 'sample3'
+  tag: 'sample2'
   symmetry: '2/m_uab'
   iterations: 1
   model: 'unity'
-  foms: 'CC Rsplit'
+  foms: 'CCstar Rsplit'
   nshells: 10
   highres: 2.5
