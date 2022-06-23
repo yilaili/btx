@@ -179,6 +179,30 @@ def stream_analysis(config):
         logger.info(f'Concatenated all stream files to {task.tag}.stream')
         logger.debug('Done!')
 
+def determine_cell(config):
+    from btx.interfaces.stream_interface import StreamInterface, write_cell_file, cluster_cell_params
+    setup = config.setup
+    task = config.determine_cell
+    """ Cluster crystals from cell-free indexing and write most-frequently found cell to CrystFEL cell file. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    stream_files = os.path.join(taskdir, f"r*{task.tag}.stream")
+    logger.info(f"Processing files {glob.glob(stream_files)}")
+    st = StreamInterface(input_files=glob.glob(stream_files), cell_only=True)
+    if st.rank == 0:
+        logger.debug(f'Read stream files: {stream_files}')
+        celldir = os.path.join(setup.root_dir, 'cell')
+        os.makedirs(celldir, exist_ok=True)
+        cell = st.stream_data[:,2:]
+        cell[:,:3] *= 10
+        labels = cluster_cell_params(cell, 
+                                     os.path.join(taskdir, f"clusters_{task.tag}.txt"),
+                                     os.path.join(celldir, f"{task.tag}.cell"),
+                                     in_cell=task.get('input_cell'), 
+                                     eps=task.get('eps') if task.get('eps') is not None else 5,
+                                     min_samples=task.get('min_samples') if task.get('min_samples') is not None else 5)
+        logger.info(f'Wrote updated CrystFEL cell file for sample {task.tag} to {celldir}')
+        logger.debug('Done!')
+
 def merge(config):
     from btx.processing.merge import StreamtoMtz
     setup = config.setup
