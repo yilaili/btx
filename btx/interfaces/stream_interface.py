@@ -448,6 +448,49 @@ def write_cell_file(cell, output_file, input_file=None):
     outfile.write(f'ga = {cell[5]:.3f} deg\n')
     outfile.close()
 
+def cluster_cell_params(cell, out_clusters, out_cell, in_cell=None, eps=5, min_samples=5):
+    """
+    Apply DBScan clustering to unit cell parameters and write the most
+    prevalent unit cell parameters to a CrystFEL cell file. Unit cell
+    parameters from all valid clusters are written to a separate file.
+    
+    Parameters
+    ----------
+    cell : numpy.ndarray, shape (n_crystals, 6)
+        [a,b,c,alpha,beta,gamma] in Angstrom and degrees
+    out_clusters : str
+        file to write clustering results to
+    out_cell : str
+        output CrystFEL unit cell file
+    in_cell : str
+        input CrystFEL unit cell file to copy lattice type from, optional
+    eps : float
+        max distance for points to be considered neighbors
+    min_samples : int
+        minimum number of samples for a cluster to be valid
+        
+    Returns
+    -------
+    labels : numpy.ndarray, shape (n_crystals,)
+        cluster labels for input cell array
+    """
+    from sklearn.cluster import DBSCAN
+    
+    clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(cell)
+    counts = np.bincount(clustering.labels_[clustering.labels_!=-1])
+    sort_idx = np.argsort(counts)[::-1]
+    
+    cols = ['n_crystals', 'fraction', 'a', 'b', 'c', 'alpha', 'beta', 'gamma']
+    results = np.array([np.concatenate((np.array([counts[nc], counts[nc]/np.sum(counts)]), 
+                                        np.median(cell[clustering.labels_==nc], axis=0))) for nc in sort_idx])
+    
+    fmt=['%d', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f']
+    np.savetxt(out_clusters, results, header=' '.join(cols), fmt=fmt)
+    
+    write_cell_file(results[0][2:], out_cell, input_file=in_cell) 
+    
+    return clustering.labels_
+
 #### For command line use ####
             
 def parse_input():
