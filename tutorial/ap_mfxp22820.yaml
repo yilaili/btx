@@ -53,6 +53,10 @@ index:
 stream_analysis:
   tag: 'sample2'
 
+determine_cell:
+  tag: 'sample2'
+  input_cell: '/cds/data/psdm/mfx/mfxp22820/scratch/apeck/cell/prime.cell'
+
 merge:
   tag: 'sample2'
   symmetry: '2/m_uab'
