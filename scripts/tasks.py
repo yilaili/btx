@@ -2,6 +2,8 @@ import logging
 import os
 import requests
 import glob
+import shutil
+import numpy as np
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -220,3 +222,68 @@ def merge(config):
     stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
     stream_to_mtz.cmd_get_hkl()
     logger.info(f'Executable written to {stream_to_mtz.tmp_exe}')
+
+def refine_geometry(config, task=None):
+    from btx.diagnostics.geoptimizer import Geoptimizer
+    from btx.misc.shortcuts import fetch_latest, check_file_existence
+    setup = config.setup
+    if task is None:
+        task = config.refine_geometry
+        for var in [task.dx, task.dy, task.dz]:
+            var = tuple([float(elem) for elem in var.split()])
+            var = np.linspace(var[0], var[1], int(var[2]))
+    """ Refine detector center based on geometry that minimizes Rsplit. """
+    taskdir = os.path.join(setup.root_dir, 'index')
+    os.makedirs(task.scan_dir, exist_ok=True)
+    task.runs = tuple([int(elem) for elem in task.runs.split()])
+    if len(task.runs) == 2:
+        task.runs = (*task.runs, 1)
+    geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=task.runs[0])
+    logger.info(f'Scanning around geometry file {geom_file}')
+    geopt = Geoptimizer(setup.queue,
+                        taskdir,
+                        task.scan_dir,
+                        np.arange(task.runs[0], task.runs[1]+1, task.runs[2]),
+                        geom_file,
+                        task.dx,
+                        task.dy,
+                        task.dz)
+    geopt.launch_indexing(config.index)
+    geopt.launch_stream_analysis(config.index.cell)    
+    geopt.launch_merging(config.merge)
+    geopt.save_results()
+    check_file_existence(os.path.join(task.scan_dir, "results.txt"), geopt.timeout)
+    results = np.loadtxt(os.path.join(task.scan_dir, "results.txt"))
+    index = np.argwhere(results[:,-1]==results[:,-1].min())[0][0]
+    logger.info(f'Stats for best performing geometry are CCstar: {results[index,-2]}, Rsplit: {results[index,-1]}')
+    logger.info(f'Detector center shifted by: {results[index,0]} pixels in x, {results[index,1]} pixels in y')
+    logger.info(f'Detector distance shifted by: {results[index,2]} m')
+    geom_opt = os.path.join(task.scan_dir, "geom", f"shift{index}.geom")
+    geom_new = os.path.join(setup.root_dir, "geom", f"r{task.runs[0]:04}.geom")
+    if os.path.exists(geom_new):
+        shutil.move(geom_new, f"{geom_new}.old")
+    shutil.copy2(geom_opt, geom_new)
+    logger.info(f'New geometry file saved to {geom_new}')
+    logger.debug('Done!')
+    
+def refine_center(config):
+    """ Wrapper for the refine_geometry task, searching for the detector center. """
+    setup = config.setup
+    task = config.refine_center
+    task.scan_dir = os.path.join(setup.root_dir, 'scan_center')
+    task.dx = tuple([float(elem) for elem in task.dx.split()])
+    task.dx = np.linspace(task.dx[0], task.dx[1], int(task.dx[2]))
+    task.dy = tuple([float(elem) for elem in task.dy.split()])
+    task.dy = np.linspace(task.dy[0], task.dy[1], int(task.dy[2]))
+    task.dz = [0]
+    refine_geometry(config, task)
+    
+def refine_distance(config):
+    """ Wrapper for the refine_geometry task, searching for the detector distance. """
+    setup = config.setup
+    task = config.refine_distance
+    task.scan_dir = os.path.join(setup.root_dir, 'scan_distance')
+    task.dx, task.dy = [0], [0]
+    task.dz = tuple([float(elem) for elem in task.dz.split()])
+    task.dz = np.linspace(task.dz[0], task.dz[1], int(task.dz[2]))
+    refine_geometry(config, task)
