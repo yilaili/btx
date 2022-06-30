@@ -229,6 +229,7 @@ def refine_geometry(config, task=None):
     setup = config.setup
     if task is None:
         task = config.refine_geometry
+        task.scan_dir = os.path.join(setup.root_dir, f'scan_{config.merge.tag}')
         for var in [task.dx, task.dy, task.dz]:
             var = tuple([float(elem) for elem in var.split()])
             var = np.linspace(var[0], var[1], int(var[2]))
@@ -270,7 +271,7 @@ def refine_center(config):
     """ Wrapper for the refine_geometry task, searching for the detector center. """
     setup = config.setup
     task = config.refine_center
-    task.scan_dir = os.path.join(setup.root_dir, 'scan_center')
+    task.scan_dir = os.path.join(setup.root_dir, f'scan_center_{config.merge.tag}')
     task.dx = tuple([float(elem) for elem in task.dx.split()])
     task.dx = np.linspace(task.dx[0], task.dx[1], int(task.dx[2]))
     task.dy = tuple([float(elem) for elem in task.dy.split()])
@@ -282,7 +283,7 @@ def refine_distance(config):
     """ Wrapper for the refine_geometry task, searching for the detector distance. """
     setup = config.setup
     task = config.refine_distance
-    task.scan_dir = os.path.join(setup.root_dir, 'scan_distance')
+    task.scan_dir = os.path.join(setup.root_dir, f'scan_distance_{config.merge.tag}')
     task.dx, task.dy = [0], [0]
     task.dz = tuple([float(elem) for elem in task.dz.split()])
     task.dz = np.linspace(task.dz[0], task.dz[1], int(task.dz[2]))
