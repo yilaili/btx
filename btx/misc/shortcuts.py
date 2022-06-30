@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import glob
+import time
 
 class AttrDict(dict):
     """ Nested Attribute Dictionary
@@ -55,3 +56,23 @@ def fetch_latest(fnames, run):
     sort_idx = np.argsort(avail)
     idx = np.searchsorted(avail[sort_idx], run, side='right') - 1
     return fnames[sort_idx[idx]]
+
+def check_file_existence(fname, timeout, frequency=15):
+    """
+    Pause until a given file exists, exiting if the waiting
+    period exceeds timeout.
+    
+    Parameters
+    ----------
+    fname : str
+        name of file whose existence to check for
+    timeout : float
+        permitted waiting period in seconds
+    frequency : float
+        frequency with which to check in seconds
+    """
+    start_time = time.time() 
+    while time.time() - start_time < timeout:
+        if os.path.exists(fname):
+            break
+        time.sleep(frequency)
