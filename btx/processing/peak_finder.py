@@ -94,7 +94,7 @@ class PeakFinder:
             if True, retrieve mask from psana Detector object
         """
         mask = np.ones(self.psi.det.shape()).astype(np.uint16)  
-        if psana_mask:
+        if psana_mask and self.psi.det_type!='Rayonix':
             mask = self.psi.det.mask(self.psi.run, calib=False, status=True, 
                                      edges=False, centra=False, unbond=False, 
                                      unbondnbrs=False).astype(np.uint16)
