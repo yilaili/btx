@@ -6,6 +6,7 @@ import requests
 from mpi4py import MPI
 from btx.interfaces.psana_interface import *
 from psalgos.pypsalgos import PyAlgos
+import matplotlib.pyplot as plt
 
 class PeakFinder:
     
@@ -469,6 +470,63 @@ class PeakFinder:
                 layout[:] = vsrc
                 with h5py.File(vfname, "a", libver="latest") as f:
                      f.create_virtual_dataset(dname, layout, fillvalue=-1)
+
+def visualize_hits(fname, exp, det_type, run, savename=None, vmax_scale=3):
+    """
+    Visualize a random selection of hits stored in the CXI file.
+    
+    Parameters
+    ----------
+    fname : str
+        path to CXI file
+    exp : str
+        experiment name
+    det_type : str
+        detector type
+    run : int
+        run number 
+    savename : str
+        path for saving plot
+    vmax_scale : float
+        vmax set to this scale factor times image mean
+    """
+    psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
+    pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
+    
+    f = h5py.File(fname, 'r')
+    mask = 1 - f["/entry_1/data_1/mask"][:] # need to invert from CrystFEL convention
+    hits = f['entry_1/data_1/data'][:]
+    n_hits = hits.shape[0]
+    rand_sel = np.random.randint(0, high=n_hits, size=9)
+    
+    if det_type is not 'Rayonix':
+        hits = hits.reshape(hits.shape[0], *psi.det.shape())
+        hits = assemble_image_stack_batch(hits, pixel_index_map)
+        mask = assemble_image_stack_batch(mask.reshape(psi.det.shape()), pixel_index_map)
+    
+    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(6,6),dpi=180)
+    k=0
+    for i in np.arange(3):
+        for j in np.arange(3):
+            if k >= n_hits:
+                break
+            axs[i,j].imshow(hits[k] * mask, vmin=0,vmax=vmax_scale*hits[k].mean(),cmap='Greys')
+            axs[i,j].axis('off')
+            npeaks = f['entry_1/result_1/nPeaks'][rand_sel[k]]
+            axs[i,j].set_title(f'# of peaks: {npeaks}')
+            for ipeak in np.arange(npeaks):
+                panel_num = f['entry_1/result_1/peakYPosRaw'][rand_sel[k]] // psi.det.shape()[1]
+                panel_row = f['entry_1/result_1/peakYPosRaw'][rand_sel[k]] % psi.det.shape()[1]
+                panel_col = f['entry_1/result_1/peakXPosRaw'][rand_sel[k]]
+                pixel = pixel_index_map[int(panel_num[ipeak]), int(panel_row[ipeak]), int(panel_col[ipeak])]
+                circle = plt.Circle((pixel[1],pixel[0]),20, color='blue', alpha=0.2)
+                axs[i,j].add_patch(circle)
+            k+=1
+    plt.tight_layout()
+    if savename is not None:
+        fig.savefig(savename, bbox_inches='tight', dpi=300)
+    
+    f.close()
 
 #### For command line use ####
             
