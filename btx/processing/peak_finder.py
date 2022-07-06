@@ -154,7 +154,7 @@ class PeakFinder:
                                         maxshape=(None, dim0, dim1),dtype=np.float32)
         data_1.attrs["axes"] = "experiment_identifier"
         
-        for key in ['powderHits', 'powderMisses', 'mask']:
+        for key in ['powderHits', 'powderMisses', 'mask', 'powderHitsRank', 'powderMissesRank']:
             entry_1.create_dataset(f'/entry_1/data_1/{key}', (dim0, dim1), chunks=(dim0, dim1), maxshape=(dim0, dim1), dtype=float)
                 
         # peak-related keys
@@ -251,9 +251,9 @@ class PeakFinder:
 
         # add powders and mask, reshaping to match crystfel conventions
         if self.powder_hits is not None:
-            outh5["/entry_1/data_1/powderHits"][:] = self.powder_hits.reshape(-1, self.powder_hits.shape[-1])
+            outh5["/entry_1/data_1/powderHitsRank"][:] = self.powder_hits.reshape(-1, self.powder_hits.shape[-1])
         if self.powder_misses is not None:
-            outh5["/entry_1/data_1/powderMisses"][:] = self.powder_misses.reshape(-1, self.powder_misses.shape[-1])
+            outh5["/entry_1/data_1/powderMissesRank"][:] = self.powder_misses.reshape(-1, self.powder_misses.shape[-1])
         outh5["/entry_1/data_1/mask"][:] = (1-self.mask).reshape(-1, self.mask.shape[-1]) # crystfel expects inverted values
 
         outh5.close()
@@ -361,6 +361,8 @@ class PeakFinder:
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
         self.n_events_per_rank = self.comm.gather(self.n_events, root=0)
+        powder_hits_all = np.array(self.comm.gather(self.powder_hits, root=0))
+        powder_misses_all = np.array(self.comm.gather(self.powder_misses, root=0))
         
         if self.rank == 0:
             # write summary file
@@ -369,6 +371,12 @@ class PeakFinder:
                 f.write(f"Number of hits found: {self.n_hits_total}\n")
                 f.write(f"Fractional hit rate: {(self.n_hits_total/self.n_events_per_rank[-1]):.2f}\n")
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
+
+            # add final powders, only needed in first and virtual cxis
+            outh5 = h5py.File(self.fname, "r+")
+            outh5["/entry_1/data_1/powderHits"][:] = powder_hits_all.reshape(-1, powder_hits_all.shape[-1])
+            outh5["/entry_1/data_1/powderMisses"][:] = powder_misses_all.reshape(-1, powder_misses_all.shape[-1])
+            outh5.close()
 
             # generate virtual dataset and list for
             vfname = os.path.join(self.outdir, f'{self.psi.exp}_r{self.psi.run:04}{self.tag}.cxi')
@@ -464,7 +472,7 @@ class PeakFinder:
             dname = f'{dname_list[dnum]}/{key_list[dnum]}'
             if key_list[dnum] not in ['mask', 'powderHits', 'powderMisses']:
                 self.add_virtual_dataset(vfname, fnames, dname, shape_list[dnum], dtype_list[dnum], mode=mode)
-            if key_list[dnum] == 'mask':
+            else:
                 layout = h5py.VirtualLayout(shape=shape_list[dnum], dtype=dtype_list[dnum])
                 vsrc = h5py.VirtualSource(fnames[0], dname, shape=shape_list[dnum])
                 layout[:] = vsrc
