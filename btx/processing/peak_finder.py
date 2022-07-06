@@ -479,7 +479,7 @@ class PeakFinder:
                 with h5py.File(vfname, "a", libver="latest") as f:
                      f.create_virtual_dataset(dname, layout, fillvalue=-1)
 
-def visualize_hits(fname, exp, det_type, run, savename=None, vmax_scale=3):
+def visualize_hits(fname, exp, run, det_type, savepath=None, vmax_ind=3, vmax_powder=5):
     """
     Visualize a random selection of hits stored in the CXI file.
     
@@ -489,36 +489,44 @@ def visualize_hits(fname, exp, det_type, run, savename=None, vmax_scale=3):
         path to CXI file
     exp : str
         experiment name
-    det_type : str
-        detector type
     run : int
         run number 
+    det_type : str
+        detector type
     savename : str
-        path for saving plot
-    vmax_scale : float
-        vmax set to this scale factor times image mean
+        directory to which to save plots
+    vmax_ind : float
+        vmax for plot of individual hits set to vmax_ind * mean(image)
+    vmax_powder : float
+        vmax for plot of powder hits set to vmax_powder * mean(image)
     """
     psi = PsanaInterface(exp=exp, run=run, det_type=det_type)
     pixel_index_map = retrieve_pixel_index_map(psi.det.geometry(psi.run))
     
     f = h5py.File(fname, 'r')
     mask = 1 - f["/entry_1/data_1/mask"][:] # need to invert from CrystFEL convention
+    powder_hits = f['entry_1/data_1/powderHits'][:]
+    powder_misses = f['entry_1/data_1/powderMisses'][:]
     hits = f['entry_1/data_1/data'][:]
-    n_hits = hits.shape[0]
-    rand_sel = np.random.randint(0, high=n_hits, size=9)
     
     if det_type is not 'Rayonix':
         hits = hits.reshape(hits.shape[0], *psi.det.shape())
         hits = assemble_image_stack_batch(hits, pixel_index_map)
         mask = assemble_image_stack_batch(mask.reshape(psi.det.shape()), pixel_index_map)
+        powder_hits = assemble_image_stack_batch(powder_hits.reshape(psi.det.shape()), pixel_index_map)
+        powder_misses = assemble_image_stack_batch(powder_misses.reshape(psi.det.shape()), pixel_index_map)
     
-    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(6,6),dpi=180)
+    # individual hits
+    fig1, axs = plt.subplots(nrows=3, ncols=3, figsize=(6,6),dpi=180)
+    n_hits = hits.shape[0]
+    rand_sel = np.random.randint(0, high=n_hits, size=9)
+    
     k=0
     for i in np.arange(3):
         for j in np.arange(3):
             if k >= n_hits:
                 break
-            axs[i,j].imshow(hits[k] * mask, vmin=0,vmax=vmax_scale*hits[k].mean(),cmap='Greys')
+            axs[i,j].imshow(hits[k] * mask, vmin=0,vmax=vmax_ind*hits[k].mean(),cmap='Greys')
             axs[i,j].axis('off')
             npeaks = f['entry_1/result_1/nPeaks'][rand_sel[k]]
             axs[i,j].set_title(f'# of peaks: {npeaks}')
@@ -530,9 +538,20 @@ def visualize_hits(fname, exp, det_type, run, savename=None, vmax_scale=3):
                 circle = plt.Circle((pixel[1],pixel[0]),20, color='blue', alpha=0.2)
                 axs[i,j].add_patch(circle)
             k+=1
-    plt.tight_layout()
-    if savename is not None:
-        fig.savefig(savename, bbox_inches='tight', dpi=300)
+            
+    if savepath is not None:
+        fig1.savefig(os.path.join(savepath, "peakfinding_hits.png"), bbox_inches='tight', dpi=300)
+        
+    # 'powder' hits and misses
+    fig2, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6))
+    
+    ax1.imshow(mask*powder_hits, vmin=0, vmax=vmax_powder)
+    ax2.imshow(mask*powder_misses, vmin=0, vmax=vmax_powder)
+    ax1.set_title("Powder Hits", fontsize=18)
+    ax2.set_title("Powder Misses", fontsize=18)
+    
+    if savepath is not None:
+        fig2.savefig(os.path.join(savepath, "peakfinding_powderhits.png"), bbox_inches='tight', dpi=300)
     
     f.close()
 
