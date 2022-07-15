@@ -57,6 +57,7 @@ do
       CONFIGFILE="$2"
       shift
       shift
+      ;;
     -e|--experiment_name)
       EXPERIMENT=$2
       shift
