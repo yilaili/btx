@@ -361,9 +361,9 @@ class PeakFinder:
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
         self.n_events_per_rank = self.comm.gather(self.n_events, root=0)
-        powder_hits_all = np.array(self.comm.gather(self.powder_hits, root=0))
-        powder_misses_all = np.array(self.comm.gather(self.powder_misses, root=0))
-        
+        powder_hits_all = np.max(np.array(self.comm.gather(self.powder_hits, root=0)), axis=0)
+        powder_misses_all = np.max(np.array(self.comm.gather(self.powder_misses, root=0)), axis=0)
+
         if self.rank == 0:
             # write summary file
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
