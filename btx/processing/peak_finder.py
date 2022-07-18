@@ -507,7 +507,9 @@ def visualize_hits(fname, exp, run, det_type, savepath=None, vmax_ind=3, vmax_po
     mask = 1 - f["/entry_1/data_1/mask"][:] # need to invert from CrystFEL convention
     powder_hits = f['entry_1/data_1/powderHits'][:]
     powder_misses = f['entry_1/data_1/powderMisses'][:]
-    hits = f['entry_1/data_1/data'][:]
+    shape = f['entry_1/data_1/data'].shape
+    indices = np.sort(np.random.randint(low=0, high=shape[0], size=9))
+    hits = f['entry_1/data_1/data'][indices]
     
     if det_type is not 'Rayonix':
         hits = hits.reshape(hits.shape[0], *psi.det.shape())
