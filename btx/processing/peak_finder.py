@@ -361,9 +361,9 @@ class PeakFinder:
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
         self.n_events_per_rank = self.comm.gather(self.n_events, root=0)
-        powder_hits_all = np.array(self.comm.gather(self.powder_hits, root=0))
-        powder_misses_all = np.array(self.comm.gather(self.powder_misses, root=0))
-        
+        powder_hits_all = np.max(np.array(self.comm.gather(self.powder_hits, root=0)), axis=0)
+        powder_misses_all = np.max(np.array(self.comm.gather(self.powder_misses, root=0)), axis=0)
+
         if self.rank == 0:
             # write summary file
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
@@ -507,7 +507,9 @@ def visualize_hits(fname, exp, run, det_type, savepath=None, vmax_ind=3, vmax_po
     mask = 1 - f["/entry_1/data_1/mask"][:] # need to invert from CrystFEL convention
     powder_hits = f['entry_1/data_1/powderHits'][:]
     powder_misses = f['entry_1/data_1/powderMisses'][:]
-    hits = f['entry_1/data_1/data'][:]
+    shape = f['entry_1/data_1/data'].shape
+    indices = np.sort(np.random.randint(low=0, high=shape[0], size=9))
+    hits = f['entry_1/data_1/data'][indices]
     
     if det_type is not 'Rayonix':
         hits = hits.reshape(hits.shape[0], *psi.det.shape())
