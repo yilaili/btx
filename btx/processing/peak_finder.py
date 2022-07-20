@@ -118,7 +118,7 @@ class PeakFinder:
                                          atot_thr=self.atot_thr,
                                          son_min=self.son_min)
         self.n_hits = 0
-        self.powder_hits, self.powder_misses = None, None
+        self.powder_hits, self.powder_misses = np.zeros(self.psi.det.shape()), np.zeros(self.psi.det.shape())
 
     def set_up_cxi(self, tag=''):
         """
@@ -250,10 +250,8 @@ class PeakFinder:
             outh5[f'/LCLS/{key}'].resize((self.n_hits,))
 
         # add powders and mask, reshaping to match crystfel conventions
-        if self.powder_hits is not None:
-            outh5["/entry_1/data_1/powderHitsRank"][:] = self.powder_hits.reshape(-1, self.powder_hits.shape[-1])
-        if self.powder_misses is not None:
-            outh5["/entry_1/data_1/powderMissesRank"][:] = self.powder_misses.reshape(-1, self.powder_misses.shape[-1])
+        outh5["/entry_1/data_1/powderHitsRank"][:] = self.powder_hits.reshape(-1, self.powder_hits.shape[-1])
+        outh5["/entry_1/data_1/powderMissesRank"][:] = self.powder_misses.reshape(-1, self.powder_misses.shape[-1])
         outh5["/entry_1/data_1/mask"][:] = (1-self.mask).reshape(-1, self.mask.shape[-1]) # crystfel expects inverted values
 
         outh5.close()
