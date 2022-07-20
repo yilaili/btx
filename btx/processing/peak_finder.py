@@ -355,9 +355,6 @@ class PeakFinder:
         """
         Summarize results and write to peakfinding.summary file.
         """
-        # debug
-        print(f"rank {self.rank} has powder_hits shape: {self.powder_hits.shape}")
-
         # grab summary stats
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
