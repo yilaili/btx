@@ -108,8 +108,11 @@ MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/mpirun ${MAIN_PY}"
 else
 MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python ${MAIN_PY}"
 fi
-UUID=$(cat /proc/sys/kernel/random/uuid)
-TMP_EXE="${SCRIPT_DIR}/task_${UUID}.sh"
+# Define the TMP_EXE environment variable if submitted by a user belonging to ps-data
+if [ `groups | grep "ps-data"` != '' ]; then
+  UUID=$(cat /proc/sys/kernel/random/uuid)
+  TMP_EXE="${SCRIPT_DIR}/task_${UUID}.sh"
+fi
 
 #Submit to SLURM
 sbatch << EOF

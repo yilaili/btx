@@ -1,8 +1,8 @@
-import numpy as np
 import argparse
 import os
-import subprocess
 import requests
+import subprocess
+import uuid
 
 class Indexer:
     
@@ -63,7 +63,7 @@ class Indexer:
         if "TMP_EXE" in os.environ:
             self.tmp_exe = os.environ['TMP_EXE']
         else:
-            self.tmp_exe = os.path.join(self.taskdir ,f'r{self.run:04}/index_r{self.run:04}.sh')
+            self.tmp_exe = os.path.join(self.taskdir ,f'r{self.run:04}/index_r{self.run:04}_{str(uuid.uuid4())}.sh')
         self.peakfinding_summary = os.path.join(self.taskdir ,f'r{self.run:04}/peakfinding{self.tag_cxi}.summary')
         self.indexing_summary = os.path.join(self.taskdir ,f'r{self.run:04}/indexing_{self.tag}.summary')
 
