@@ -1,8 +1,7 @@
-import numpy as np
 import argparse
 import os
-import subprocess
 import requests
+import subprocess
 
 class Indexer:
     
