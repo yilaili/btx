@@ -2,7 +2,6 @@ import argparse
 import os
 import requests
 import subprocess
-import uuid
 
 class Indexer:
     
