@@ -125,7 +125,7 @@ class Geoptimizer:
         jobnames = list()        
         statusfile = os.path.join(self.scan_dir,"status.sh")
 
-        if params.get(tag_cxi) is not None :
+        if params.get('tag_cxi') is not None :
             if ( params.tag_cxi != '' ) and ( params.tag_cxi[0]!='_' ):
                 tag_cxi = '_'+params.tag_cxi
         else:
