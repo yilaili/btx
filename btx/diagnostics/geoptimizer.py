@@ -125,10 +125,16 @@ class Geoptimizer:
         jobnames = list()        
         statusfile = os.path.join(self.scan_dir,"status.sh")
 
+        if params.get('tag_cxi') is not None :
+            if ( params.tag_cxi != '' ) and ( params.tag_cxi[0]!='_' ):
+                tag_cxi = '_'+params.tag_cxi
+        else:
+            tag_cxi = ''
+
         for run in self.runs:
             
             os.makedirs(os.path.join(self.scan_dir, f"r{run:04}"), exist_ok=True)
-            lst_file = os.path.join(self.task_dir ,f'r{run:04}/r{run:04}.lst')
+            lst_file = os.path.join(self.task_dir ,f'r{run:04}/r{run:04}{tag_cxi}.lst')
             
             for num in range(self.scan_results.shape[0]):
                 
