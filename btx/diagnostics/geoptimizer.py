@@ -75,7 +75,7 @@ class Geoptimizer:
             fh.writelines(f"#SBATCH -p {self.queue}\n")
             fh.writelines(f"#SBATCH --job-name={jobname}\n")
             fh.writelines(f"#SBATCH --output={self.logdir}/{jobname}.out\n")
-            fh.writelines(f"#SBATCH --output={self.logdir}/{jobname}.err\n")
+            fh.writelines(f"#SBATCH --error={self.logdir}/{jobname}.err\n")
             fh.writelines("#SBATCH --time=0:30:00\n")
             fh.writelines("#SBATCH --exclusive\n")
             fh.writelines(f"{self.crystfel_export}\n")
@@ -111,7 +111,7 @@ class Geoptimizer:
                         break                    
                 time.sleep(self.frequency)
 
-    def launch_indexing(self, params, ncores_per_job=4):
+    def launch_indexing(self, params, ncores_per_job=64):
         """
         Launch indexing jobs.
         
