@@ -1,6 +1,6 @@
 setup:
   queue: ffbh3q
-  root_dir: '/cds/data/psdm/mfx/mfxx49820/scratch/btx/'
+  root_dir: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/'
   exp: 'mfxx49820'
   run: 6
   det_type: 'epix10k2M'
