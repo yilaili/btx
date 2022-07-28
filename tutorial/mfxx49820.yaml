@@ -2,7 +2,7 @@ setup:
   queue: ffbh3q
   root_dir: '/cds/data/drpsrcf/mfx/mfxx49820/scratch/btx/'
   exp: 'mfxx49820'
-  run: 6
+  run: 8
   det_type: 'epix10k2M'
 
 fetch_mask:
@@ -23,6 +23,7 @@ opt_geom:
   n_iterations: 5
   n_peaks: 3
   threshold: 1000000
+  center: 841 833
 
 find_peaks:
   tag: ''
