@@ -90,6 +90,10 @@ def opt_geom(config):
     setup = config.setup
     task = config.opt_geom
     """ Optimize and deploy the detector geometry from a silver behenate run. """
+    if task.get('center') is not None:
+        task.center = tuple([float(elem) for elem in task.center.split()])
+    else:
+        task.center = None
     taskdir = os.path.join(setup.root_dir, 'geom')
     os.makedirs(taskdir, exist_ok=True)
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
@@ -102,6 +106,7 @@ def opt_geom(config):
         geom_opt.opt_geom(powder=os.path.join(setup.root_dir, f"powder/r{setup.run:04}_max.npy"),
                           mask=mask_file,
                           distance=task.get('distance'),
+                          center=task.center,
                           n_iterations=task.get('n_iterations'), 
                           n_peaks=task.get('n_peaks'), 
                           threshold=task.get('threshold'),
