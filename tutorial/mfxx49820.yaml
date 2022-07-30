@@ -23,7 +23,7 @@ opt_geom:
   n_iterations: 5
   n_peaks: 3
   threshold: 1000000
-  center: 833 833
+  center: 823 833
 
 find_peaks:
   tag: ''
