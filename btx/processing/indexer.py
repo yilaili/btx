@@ -12,7 +12,7 @@ class Indexer:
     """
 
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
-                 tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True, ncores=16, queue=64):
+                 tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True, ncores=64, queue='ffbh3q'):
         
         # experiment paramters
         self.exp = exp
