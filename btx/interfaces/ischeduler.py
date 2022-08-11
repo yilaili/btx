@@ -62,3 +62,12 @@ class JobScheduler:
         
         with open(self.jobfile, 'a') as jfile:
             jfile.write(application)
+
+    def submit(self):
+        """ Submit to queue. """
+        os.system(f"sbatch {self.jobfile}")
+
+    def clean_up(self):
+        """ Add a line to delete submission file."""
+        with open(self.jobfile, 'a') as jfile:
+            jfile.write(f"rm {self.jobfile}")
