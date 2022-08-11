@@ -14,7 +14,7 @@ class Indexer:
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
                  tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True, ncores=16, queue=64):
         
-        # general paramters
+        # experiment paramters
         self.exp = exp
         self.run = run
         self.det_type = det_type
@@ -32,6 +32,8 @@ class Indexer:
         self.no_revalidate = no_revalidate # bool, skip validation step to omit iffy peaks
         self.multi = multi # bool, enable multi-lattice indexing
         self.profile = profile # bool, display timing data
+
+        # submission parameters
         self.ncores = ncores # int, number of cores to parallelize indexing across
         self.queue = queue # str, submission queue
         self._retrieve_paths()
@@ -55,9 +57,7 @@ class Indexer:
             self.tmp_exe = os.path.join(self.taskdir ,f'r{self.run:04}/index_r{self.run:04}.sh')
         self.peakfinding_summary = os.path.join(self.taskdir ,f'r{self.run:04}/peakfinding{self.tag_cxi}.summary')
         self.indexing_summary = os.path.join(self.taskdir ,f'r{self.run:04}/indexing_{self.tag}.summary')
-
         self.script_path = os.path.abspath(__file__)
-        self.python_path = os.environ['WHICHPYTHON']
 
     def launch(self):
         """
@@ -69,7 +69,7 @@ class Indexer:
         if self.multi: command += ' --multi'
         if self.profile: command += ' --profile'
 
-        command +=f"\n{self.python_path} {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} "
+        command +=f"\npython {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} "
         if ( self.tag_cxi != '' ): command += f' --tag_cxi {self.tag_cxi}'
         command += "\n"
 

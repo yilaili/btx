@@ -15,6 +15,22 @@ class JobScheduler:
         self.ncores = ncores
         self.time = time
 
+    def _find_python_path(self):
+        """ Determine the relevant python path. """
+        pythonpath=None
+        possible_paths = ["/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python"]
+    
+        try:
+            pythonpath = os.environ['WHICHPYTHON']
+        except KeyError:
+            pass
+    
+        for ppath in possible_paths:
+            if os.path.exists(ppath):
+                pythonpath = ppath
+
+        return pythonpath            
+
     def write_header(self):
         """ Write resource specification to submission script. """
         if(self.manager == 'SLURM'):
@@ -59,9 +75,10 @@ class JobScheduler:
         """ Write application and source requested dependencies. """
         if dependencies:
             self._write_dependencies(dependencies)
-        
+
+        pythonpath = self._find_python_path()
         with open(self.jobfile, 'a') as jfile:
-            jfile.write(application)
+            jfile.write(application.replace("python", pythonpath))
 
     def submit(self):
         """ Submit to queue. """
