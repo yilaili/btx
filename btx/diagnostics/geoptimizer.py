@@ -10,6 +10,7 @@ import yaml
 from btx.misc.shortcuts import AttrDict
 from btx.misc.metrology import offset_geom
 from btx.interfaces.stream_interface import *
+from btx.interfaces.ischeduler import *
 from btx.processing.merge import wrangle_shells_dat
 
 class Geoptimizer:
@@ -57,32 +58,6 @@ class Geoptimizer:
         self.scan_results[:,:3] = shifts_list
         self.cols = ['dx', 'dy', 'dz']
             
-    def _submit_bash_file(self, jobfile, jobname, command):
-        """
-        Submit a job submission script to run input command.
-        
-        Parameters
-        ----------
-        jobfile : str
-            path to submission script
-        jobname : str
-            name of job to submit
-        command : str
-            bash command to run
-        """
-        with open(jobfile, "w") as fh:
-            fh.writelines("#!/bin/bash\n")
-            fh.writelines(f"#SBATCH -p {self.queue}\n")
-            fh.writelines(f"#SBATCH --job-name={jobname}\n")
-            fh.writelines(f"#SBATCH --output={self.logdir}/{jobname}.out\n")
-            fh.writelines(f"#SBATCH --error={self.logdir}/{jobname}.err\n")
-            fh.writelines("#SBATCH --time=0:30:00\n")
-            fh.writelines("#SBATCH --exclusive\n")
-            fh.writelines(f"{self.crystfel_export}\n")
-            fh.writelines(f"{command}\n")
-        
-        os.system(f"sbatch {jobfile}")
-
     def check_status(self, statusfile, jobnames, debug=False):
         """
         Check whether all launched jobs have completed.
