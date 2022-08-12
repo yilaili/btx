@@ -225,7 +225,7 @@ def merge(config):
     for ns in [1, task.nshells]:
         stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
     stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
-    stream_to_mtz.cmd_get_hkl()
+    stream_to_mtz.cmd_get_hkl(highres=task.get('highres'))
     stream_to_mtz.launch()
     logger.info(f'Merging launched!')
 
@@ -255,22 +255,11 @@ def refine_geometry(config, task=None):
                         task.dx,
                         task.dy,
                         task.dz)
-    geopt.launch_indexing(config.index)
+    geopt.launch_indexing(setup.exp, setup.det_type, config.index)
     geopt.launch_stream_analysis(config.index.cell)    
     geopt.launch_merging(config.merge)
-    geopt.save_results()
+    geopt.save_results(setup.root_dir, config.merge.tag)
     check_file_existence(os.path.join(task.scan_dir, "results.txt"), geopt.timeout)
-    results = np.loadtxt(os.path.join(task.scan_dir, "results.txt"))
-    index = np.argwhere(results[:,-1]==results[:,-1].min())[0][0]
-    logger.info(f'Stats for best performing geometry are CCstar: {results[index,-2]}, Rsplit: {results[index,-1]}')
-    logger.info(f'Detector center shifted by: {results[index,0]} pixels in x, {results[index,1]} pixels in y')
-    logger.info(f'Detector distance shifted by: {results[index,2]} m')
-    geom_opt = os.path.join(task.scan_dir, "geom", f"shift{index}.geom")
-    geom_new = os.path.join(setup.root_dir, "geom", f"r{task.runs[0]:04}.geom")
-    if os.path.exists(geom_new):
-        shutil.move(geom_new, f"{geom_new}.old")
-    shutil.copy2(geom_opt, geom_new)
-    logger.info(f'New geometry file saved to {geom_new}')
     logger.debug('Done!')
     
 def refine_center(config):

@@ -87,4 +87,4 @@ class JobScheduler:
     def clean_up(self):
         """ Add a line to delete submission file."""
         with open(self.jobfile, 'a') as jfile:
-            jfile.write(f"rm {self.jobfile}")
+            jfile.write(f"if [ -f {self.jobfile} ]; then rm -f {self.jobfile}; fi")
