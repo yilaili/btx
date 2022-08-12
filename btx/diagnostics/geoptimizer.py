@@ -27,11 +27,7 @@ class Geoptimizer:
         
         self.timeout = 64800 # number of seconds to allow sbatch'ed jobs to run before exiting, float
         self.frequency = 5 # frequency in seconds to check on job completion, float
-        self.crystfel_export="export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH" 
-        
         self._write_geoms(input_geom, dx_scan, dy_scan, dz_scan)
-        self.logdir = os.path.join(self.scan_dir, "log")
-        os.makedirs(self.logdir, exist_ok=True)
         
     def _write_geoms(self, input_geom, dx_scan, dy_scan, dz_scan):
         """
@@ -88,10 +84,10 @@ class Geoptimizer:
                 time.sleep(self.frequency)
 
     def launch_indexing(self, exp, det_type, params):
-        """                                                                                                                                                                                                                     
-        Launch indexing jobs.                                                                                                                                                                                                   
-                                                                                                                                                                                                                               
-        Parameters                                                                                                                                                                                                              
+        """                                                                                         
+        Launch indexing jobs.                                                        
+
+        Parameters                                                                       
         ----------
         exp : str
             name of experiment
@@ -180,6 +176,7 @@ class Geoptimizer:
             stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, 
                                           min_res=params.get('min_res'), push_res=params.get('push_res'))
             stream_to_mtz.cmd_compare_hkl(foms=params.foms.split(" "), nshells=1, highres=params.get('highres'))
+            stream_to_mtz.cmd_get_hkl(highres=params.get('highres'))
             stream_to_mtz.js.write_main(f"echo {jobname} | tee -a {statusfile}\n")
             stream_to_mtz.launch()
 
@@ -210,20 +207,63 @@ class Geoptimizer:
                 overall_stat[num] = stat
             self.scan_results[:,10+col] = overall_stat
 
-    def save_results(self, savepath=None):
+    def _transfer(self, root_dir, tag, num):
+        """
+        Transfer the mtz and associated geom and cell to their 
+        main associated folders.
+        
+        Parameters
+        ----------
+        root_dir : str 
+             path to root directory containing geom, cell, mtz folders
+        tag : str
+            prefix to use when naming transferred files / sample name 
+        num : int 
+            index of the scan result to transfer 
+        """
+        geom_opt = os.path.join(self.scan_dir, f"geom/shift{num}.geom")
+        geom_new = os.path.join(root_dir, "geom", f"r{self.runs[0]:04}.geom")
+
+        cell_opt = os.path.join(self.scan_dir, f"cell/g{num}.cell")
+        cell_new = os.path.join(root_dir, "cell", f"{tag}.cell")
+        
+        mtz_opt = os.path.join(self.scan_dir, f"merge/g{num}.mtz")
+        mtz_new = os.path.join(root_dir, "mtz", f"{tag}.mtz")
+        os.makedirs(os.path.join(root_dir, "mtz"), exist_ok=True)
+
+        for opt,new in zip([geom_opt,cell_opt,mtz_opt],[geom_new,cell_new,mtz_new]):
+            if os.path.exists(new):
+                shutil.move(new, f"{new}.old")
+            shutil.copy2(opt, new)
+
+    def save_results(self, root_dir, tag, savepath=None, metric='Rsplit'):
         """
         Save the results of the scan to a text file.
 
         Parameters
         ----------
+        root_dir : str 
+             path to root directory containing geom, cell, mtz folders
+        tag : str
+            prefix to use when naming transferred files / sample name 
         savepath : str
             text file to save results to
+        metric : str
+            choose optimal mtz based on max CCstar or min Rsplit
         """
         if savepath is None:
             savepath = os.path.join(self.scan_dir, "results.txt")
 
         fmt=['%.2f', '%.2f', '%.4f', '%d', '%.5f', '%.5f', '%.5f', '%.5f', '%.5f', '%.5f', '%.2f', '%.2f']
         np.savetxt(savepath, self.scan_results, header=' '.join(self.cols), fmt=fmt)
+
+        col_index = self.cols.index(metric)
+        if metric=='Rsplit':
+            row_index = np.nanargmin(self.scan_results[:,col_index])
+        elif metric == 'CCstar':
+            row_index = np.nanargmax(self.scan_results[:,col_index])
+        print(f"Selected g{row_index}.hkl, with {metric} of {self.scan_results[row_index,col_index]}")
+        self._transfer(root_dir, tag, row_index)
 
 def parse_input():
     """
@@ -263,4 +303,4 @@ if __name__ == '__main__':
         geopt.launch_indexing(config.setup.exp, config.setup.det_type, config.index)
         geopt.launch_stream_analysis(config.index.cell)
     geopt.launch_merging(config.merge)
-    geopt.save_results()
+    geopt.save_results(config.setup.root_dir, config.merge.tag)
