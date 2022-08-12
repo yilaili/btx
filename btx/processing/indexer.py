@@ -59,9 +59,16 @@ class Indexer:
         self.indexing_summary = os.path.join(self.taskdir ,f'r{self.run:04}/indexing_{self.tag}.summary')
         self.script_path = os.path.abspath(__file__)
 
-    def launch(self):
+    def launch(self, addl_command=None, dont_report=False):
         """
         Write an indexing executable for submission to slurm.
+
+        Parameters
+        ----------
+        addl_command : str
+            command to add to end of slurm file
+        dont_report : bool
+            if False, do not create summary files / report to elog
         """     
         command=f"indexamajig -i {self.lst} -o {self.stream} -j {self.ncores} -g {self.geom} --peaks=cxi --int-rad={self.rad} --indexing={self.methods} --tolerance={self.tolerance}"
         if self.cell is not None: command += f' --pdb={self.cell}'
@@ -69,9 +76,12 @@ class Indexer:
         if self.multi: command += ' --multi'
         if self.profile: command += ' --profile'
 
-        command +=f"\npython {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} "
-        if ( self.tag_cxi != '' ): command += f' --tag_cxi {self.tag_cxi}'
-        command += "\n"
+        if not dont_report:
+            command +=f"\npython {self.script_path} -e {self.exp} -r {self.run} -d {self.det_type} --taskdir {self.taskdir} --report --tag {self.tag} "
+            if ( self.tag_cxi != '' ): command += f' --tag_cxi {self.tag_cxi}'
+            command += "\n"
+        if addl_command is not None:
+            command += f"\n{addl_command}"
 
         js = JobScheduler(self.tmp_exe, ncores=self.ncores, jobname=f'idx_r{self.run:04}', queue=self.queue)
         js.write_header()

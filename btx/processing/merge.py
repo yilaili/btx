@@ -129,7 +129,7 @@ class StreamtoMtz:
         """
         Write an indexing executable for submission to slurm.
         """   
-        self.js.clean_up()
+        #self.js.clean_up()
         self.js.submit()
         
     def report(self, foms=['CCstar','Rsplit'], nshells=10, update_url=None):
