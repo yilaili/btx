@@ -21,13 +21,14 @@ def run_dimple(mtz, pdb, outdir, queue='ffbh3q', ncores=16):
     os.makedirs(outdir, exist_ok=True)
     command = f"dimple {mtz} {pdb} {outdir}\n"
 
-    js = JobScheduler(os.path.join(outdir, "dimple.sh"), 
+    js = JobScheduler(os.path.join(outdir, "dimple.sh"),
+                      logdir=outdir,
                       ncores=ncores, 
                       jobname=f'dimple', 
                       queue=queue)
     js.write_header()
     js.write_main(command, dependencies=['ccp4'])
-    #js.clean_up()
+    js.clean_up()
     js.submit()
 
 def parse_input():
