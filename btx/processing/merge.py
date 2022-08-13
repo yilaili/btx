@@ -15,13 +15,14 @@ class StreamtoMtz:
     input stream file.
     """
     
-    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='ffbh3q'):
+    def __init__(self, input_stream, symmetry, taskdir, cell, ncores=16, queue='ffbh3q', mtz_dir=None):
         self.stream = input_stream # file of unmerged reflections, str
         self.symmetry = symmetry # point group symmetry, str
         self.taskdir = taskdir # path for storing output, str
         self.cell = cell # pdb or CrystFEL cell file, str
         self.ncores = ncores # int, number of cores for merging
         self.queue = queue # cluster to submit job to
+        self.mtz_dir = mtz_dir # directory to which to transfer mtz
         self._set_up()
         
     def _set_up(self):
@@ -35,6 +36,8 @@ class StreamtoMtz:
         self.fig_dir = os.path.join(self.taskdir, "figs")
         for dirname in [self.hkl_dir, self.fig_dir]:
             os.makedirs(dirname, exist_ok=True)
+        if self.mtz_dir is not None:
+            os.makedirs(self.mtz_dir, exist_ok=True)
 
         # make path to executable
         if "TMP_EXE" in os.environ:
@@ -106,7 +109,7 @@ class StreamtoMtz:
             number of resolution shells  
         """
         foms_args = " ".join(map(str,foms))
-        command=f"python {self.script_path} -i {self.stream} --symmetry {self.symmetry} --cell {self.cell} --taskdir {self.taskdir} --foms {foms_args} --report --nshells={nshells}"
+        command=f"python {self.script_path} -i {self.stream} --symmetry {self.symmetry} --cell {self.cell} --taskdir {self.taskdir} --foms {foms_args} --report --nshells={nshells} --mtz_dir {self.mtz_dir}"
         self.js.write_main(f"{command}\n")
                 
     def cmd_get_hkl(self, highres=None):
@@ -135,7 +138,8 @@ class StreamtoMtz:
     def report(self, foms=['CCstar','Rsplit'], nshells=10, update_url=None):
         """
         Summarize results: plot figures of merit and optionally report to elog.
-        
+        Transfer the mtz file to a new folder.
+
         Parameters
         ----------
         foms : list of str
@@ -167,6 +171,11 @@ class StreamtoMtz:
         if update_url is not None:
             elog_json = [{"key": f"{fom_name}", "value": f"{stat}"} for fom_name,stat in overall_foms.items()]
             requests.post(update_url, json=elog_json)
+
+        # transfer mtz to new folder
+        if self.mtz_dir is not None:
+            shutil.copy2(os.path.join(self.taskdir, f"{self.prefix}.mtz"), 
+                         os.path.join(self.mtz_dir, f"{self.prefix}.mtz"))
 
 def wrangle_shells_dat(shells_file, outfile=None):
     """
@@ -236,6 +245,7 @@ def parse_input():
     # arguments for reporting
     parser.add_argument('--report', help='Report indexing results to summary file and elog', action='store_true')
     parser.add_argument('--update_url', help='URL for communicating with elog', required=False, type=str)
+    parser.add_argument('--mtz_dir', help='Folder to transfer mtz to', required=False, type=str)
     # slurm arguments
     parser.add_argument('--ncores', help='Number of cores for parallelizing scaling', required=False, type=int, default=16)
     parser.add_argument('--queue', help='Submission queue', required=False, type=str, default='ffbh3q')
@@ -247,7 +257,7 @@ if __name__ == '__main__':
     params = parse_input()
     
     stream_to_mtz = StreamtoMtz(params.input_stream, params.symmetry, params.taskdir, params.cell, 
-                                ncores=params.ncores, queue=params.queue)
+                                ncores=params.ncores, queue=params.queue, mtz_dir=params.mtz_dir)
     if not params.report:
         stream_to_mtz.cmd_partialator(iterations=params.iterations, model=params.model, 
                                       min_res=params.min_res, push_res=params.push_res)
