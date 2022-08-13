@@ -63,7 +63,6 @@ class JobScheduler:
         if "crystfel" in dependencies:
             dep_paths += "export PATH=/cds/sw/package/crystfel/crystfel-dev/bin:$PATH\n"
         if "ccp4" in dependencies:
-            #dep_paths += "export PATH=/cds/sw/package/ccp4/ccp4-7.0/bin:$PATH\n"
             dep_paths += "source /cds/sw/package/ccp4/ccp4-7.0/setup-scripts/ccp4.setup-sh"
         if "phenix" in dependencies:
             dep_paths += "source /cds/sw/package/phenix-1.13-2998/phenix_env.sh\n"
