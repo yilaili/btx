@@ -66,6 +66,8 @@ class JobScheduler:
             dep_paths += "export PATH=/cds/sw/package/ccp4/ccp4-7.0/bin:$PATH\n"
         if "phenix" in dependencies:
             dep_paths += "source /cds/sw/package/phenix-1.13-2998/phenix_env.sh\n"
+        if "xds" in dependencies:
+            dep_paths += "export PATH=/reg/common/package/XDS-INTEL64_Linux_x86_64:$PATH"
         dep_paths += "\n"
         
         with open(self.jobfile, 'a') as jfile:
