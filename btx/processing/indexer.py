@@ -14,7 +14,7 @@ class Indexer:
     def __init__(self, exp, run, det_type, tag, taskdir, geom, cell=None, int_rad='4,5,6', methods='mosflm',
                  tolerance='5,5,5,1.5', tag_cxi=None, no_revalidate=True, multi=True, profile=True, ncores=64, queue='ffbh3q'):
         
-        # experiment paramters
+        # experiment parameters
         self.exp = exp
         self.run = run
         self.det_type = det_type
@@ -152,7 +152,7 @@ def parse_input():
     parser.add_argument('--geom', help='CrystFEL-style geom file, required if not reporting', required=False, type=str)
     parser.add_argument('--cell', help='File containing unit cell information (.pdb or .cell)', required=False, type=str)
     parser.add_argument('--int_rad', help='Integration radii for peak, buffer and background regions', required=False, type=str, default='4,5,6')
-    parser.add_argument('--methods', help='Indexing methods, comma-separated if multiple', required=False, type=str, default='mosflm')
+    parser.add_argument('--methods', help='Indexing method(s)', required=False, type=str, default='mosflm')
     parser.add_argument('--tolerance', help='Tolerances for unit cell comparison: a,b,c,ang', required=False, type=str, default='5,5,5,1.5')
     parser.add_argument('--no_revalidate', help='Skip validation step that omits peaks that are saturated, too close to detector edge, etc.', action='store_false')
     parser.add_argument('--multi', help='Enable multi-lattice indexing', action='store_false')
