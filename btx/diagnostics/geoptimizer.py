@@ -9,7 +9,7 @@ import time
 import yaml
 from btx.misc.shortcuts import AttrDict
 from btx.misc.metrology import offset_geom
-from btx.interfaces.stream_interface import *
+from btx.interfaces.istream import *
 from btx.interfaces.ischeduler import *
 from btx.processing.indexer import Indexer
 from btx.processing.merge import *
