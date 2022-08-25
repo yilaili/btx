@@ -143,7 +143,6 @@ $MAIN_PY -c ${THIS_CONFIGFILE} -t $TASK
 if [ ${RUN_NUM} != 'None' ]; then
   rm -f ${THIS_CONFIGFILE}
 fi
-if [ -f ${TMP_EXE} ]; then chmod +x ${TMP_EXE}; . ${TMP_EXE}; rm -f ${TMP_EXE}; fi
 EOF
 
 echo "Job sent to queue"

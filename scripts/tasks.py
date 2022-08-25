@@ -155,12 +155,12 @@ def index(config):
     """ Index run using indexamajig. """
     taskdir = os.path.join(setup.root_dir, 'index')
     geom_file = fetch_latest(fnames=os.path.join(setup.root_dir, 'geom', 'r*.geom'), run=setup.run)
-    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, 
-                          taskdir=taskdir, geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, 
-                          tolerance=task.tolerance, tag_cxi=task.get('tag_cxi'), no_revalidate=task.no_revalidate, multi=task.multi, profile=task.profile)
+    indexer_obj = Indexer(exp=config.setup.exp, run=config.setup.run, det_type=config.setup.det_type, tag=task.tag, tag_cxi=task.get('tag_cxi'), taskdir=taskdir, 
+                          geom=geom_file, cell=task.get('cell'), int_rad=task.int_radius, methods=task.methods, tolerance=task.tolerance, no_revalidate=task.no_revalidate, 
+                          multi=task.multi, profile=task.profile, queue=setup.get('queue'), ncores=task.get('ncores') if task.get('ncores') is not None else 64)
     logger.debug(f'Generating indexing executable for run {setup.run} of {setup.exp}...')
-    indexer_obj.write_exe()
-    logger.info(f'Executable written to {indexer_obj.tmp_exe}')
+    indexer_obj.launch()
+    logger.info(f'Indexing launched!')
 
 def stream_analysis(config):
     from btx.interfaces.stream_interface import StreamInterface, write_cell_file
@@ -216,17 +216,18 @@ def merge(config):
     task = config.merge
     """ Merge reflections from stream file and convert to mtz. """
     taskdir = os.path.join(setup.root_dir, 'merge')
-    os.makedirs(taskdir, exist_ok=True)
     input_stream = os.path.join(setup.root_dir, f"index/{task.tag}.stream")
     cellfile = os.path.join(setup.root_dir, f"cell/{task.tag}.cell")
     foms = task.foms.split(" ")
-    stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile)
+    stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'), 
+                                ncores=task.get('ncores') if task.get('ncores') is not None else 16, mtz_dir=os.path.join(setup.root_dir, "solve"))
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, min_res=task.get('min_res'), push_res=task.get('push_res'))
     for ns in [1, task.nshells]:
         stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
+    stream_to_mtz.cmd_get_hkl(highres=task.get('highres'))
     stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
-    stream_to_mtz.cmd_get_hkl()
-    logger.info(f'Executable written to {stream_to_mtz.tmp_exe}')
+    stream_to_mtz.launch()
+    logger.info(f'Merging launched!')
 
 def refine_geometry(config, task=None):
     from btx.diagnostics.geoptimizer import Geoptimizer
@@ -254,22 +255,11 @@ def refine_geometry(config, task=None):
                         task.dx,
                         task.dy,
                         task.dz)
-    geopt.launch_indexing(config.index)
+    geopt.launch_indexing(setup.exp, setup.det_type, config.index)
     geopt.launch_stream_analysis(config.index.cell)    
     geopt.launch_merging(config.merge)
-    geopt.save_results()
+    geopt.save_results(setup.root_dir, config.merge.tag)
     check_file_existence(os.path.join(task.scan_dir, "results.txt"), geopt.timeout)
-    results = np.loadtxt(os.path.join(task.scan_dir, "results.txt"))
-    index = np.argwhere(results[:,-1]==results[:,-1].min())[0][0]
-    logger.info(f'Stats for best performing geometry are CCstar: {results[index,-2]}, Rsplit: {results[index,-1]}')
-    logger.info(f'Detector center shifted by: {results[index,0]} pixels in x, {results[index,1]} pixels in y')
-    logger.info(f'Detector distance shifted by: {results[index,2]} m')
-    geom_opt = os.path.join(task.scan_dir, "geom", f"shift{index}.geom")
-    geom_new = os.path.join(setup.root_dir, "geom", f"r{task.runs[0]:04}.geom")
-    if os.path.exists(geom_new):
-        shutil.move(geom_new, f"{geom_new}.old")
-    shutil.copy2(geom_opt, geom_new)
-    logger.info(f'New geometry file saved to {geom_new}')
     logger.debug('Done!')
     
 def refine_center(config):
