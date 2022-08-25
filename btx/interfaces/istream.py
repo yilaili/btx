@@ -430,7 +430,9 @@ def write_cell_file(cell, output_file, input_file=None):
 
     if input_file is not None:
         with open(input_file, "r") as in_cell:
-            header = list(islice(in_cell, 4))
+            header = list(islice(in_cell, 5))
+            if "a = " in header[-1]:
+                header = header[:-1]
     else:
         header = ['CrystFEL unit cell file version 1.0\n',
                   '\n',
