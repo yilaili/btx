@@ -216,12 +216,13 @@ def merge(config):
     setup = config.setup
     task = config.merge
     """ Merge reflections from stream file and convert to mtz. """
-    taskdir = os.path.join(setup.root_dir, 'merge')
+    taskdir = os.path.join(setup.root_dir, 'merge', f'{task.tag}')
     input_stream = os.path.join(setup.root_dir, f"index/{task.tag}.stream")
     cellfile = os.path.join(setup.root_dir, f"cell/{task.tag}.cell")
     foms = task.foms.split(" ")
     stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'), 
-                                ncores=task.get('ncores') if task.get('ncores') is not None else 16, mtz_dir=os.path.join(setup.root_dir, "solve"))
+                                ncores=task.get('ncores') if task.get('ncores') is not None else 16, 
+                                mtz_dir=os.path.join(setup.root_dir, "solve", f"{task.tag}"))
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, min_res=task.get('min_res'), push_res=task.get('push_res'))
     for ns in [1, task.nshells]:
         stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
@@ -229,6 +230,19 @@ def merge(config):
     stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
     stream_to_mtz.launch()
     logger.info(f'Merging launched!')
+
+def solve(config):
+    from btx.interfaces.imtz import run_dimple
+    setup = config.setup
+    task = config.solve
+    """ Run the CCP4 dimple pipeline for structure solution and refinement. """
+    taskdir = os.path.join(setup.root_dir, "solve", f"{task.tag}")
+    run_dimple(os.path.join(taskdir, f"{task.tag}.mtz"), 
+               task.pdb, 
+               taskdir,
+               queue=setup.get('queue'),
+               ncores=task.get('ncores') if task.get('ncores') is not None else 16)
+    logger.info(f'Dimple launched!')
 
 def refine_geometry(config, task=None):
     from btx.diagnostics.geoptimizer import Geoptimizer
