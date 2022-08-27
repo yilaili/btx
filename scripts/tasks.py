@@ -163,20 +163,21 @@ def index(config):
     logger.info(f'Indexing launched!')
 
 def stream_analysis(config):
-    from btx.interfaces.stream_interface import StreamInterface, write_cell_file
+    from btx.interfaces.istream import StreamInterface, write_cell_file
     setup = config.setup
     task = config.stream_analysis
     """ Diagnostics including cell distribution and peakogram. Concatenate streams. """
     taskdir = os.path.join(setup.root_dir, 'index')
     os.makedirs(os.path.join(taskdir, 'figs'), exist_ok=True)
     stream_files = os.path.join(taskdir, f"r*{task.tag}.stream")
-    st = StreamInterface(input_files=glob.glob(stream_files), cell_only=False)
+    st = StreamInterface(input_files=glob.glob(stream_files), cell_only=task.get('cell_only') if task.get('cell_only') is not None else False)
     if st.rank == 0:
         logger.debug(f'Read stream files: {stream_files}')
         st.report()
         st.plot_cell_parameters(output=os.path.join(taskdir, f"figs/cell_{task.tag}.png"))
-        st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
-        logger.info(f'Peakogram and cell distribution generated for sample {task.tag}')
+        if not st.cell_only:
+            st.plot_peakogram(output=os.path.join(taskdir, f"figs/peakogram_{task.tag}.png"))
+        logger.info(f'Cell distribution and possibly peakogram generated for sample {task.tag}')
         celldir = os.path.join(setup.root_dir, 'cell')
         os.makedirs(celldir, exist_ok=True)
         write_cell_file(st.cell_params, os.path.join(celldir, f"{task.tag}.cell"), input_file=setup.get('cell'))
@@ -187,7 +188,7 @@ def stream_analysis(config):
         logger.debug('Done!')
 
 def determine_cell(config):
-    from btx.interfaces.stream_interface import StreamInterface, write_cell_file, cluster_cell_params
+    from btx.interfaces.istream import StreamInterface, write_cell_file, cluster_cell_params
     setup = config.setup
     task = config.determine_cell
     """ Cluster crystals from cell-free indexing and write most-frequently found cell to CrystFEL cell file. """
@@ -215,12 +216,13 @@ def merge(config):
     setup = config.setup
     task = config.merge
     """ Merge reflections from stream file and convert to mtz. """
-    taskdir = os.path.join(setup.root_dir, 'merge')
+    taskdir = os.path.join(setup.root_dir, 'merge', f'{task.tag}')
     input_stream = os.path.join(setup.root_dir, f"index/{task.tag}.stream")
     cellfile = os.path.join(setup.root_dir, f"cell/{task.tag}.cell")
     foms = task.foms.split(" ")
     stream_to_mtz = StreamtoMtz(input_stream, task.symmetry, taskdir, cellfile, queue=setup.get('queue'), 
-                                ncores=task.get('ncores') if task.get('ncores') is not None else 16, mtz_dir=os.path.join(setup.root_dir, "solve"))
+                                ncores=task.get('ncores') if task.get('ncores') is not None else 16, 
+                                mtz_dir=os.path.join(setup.root_dir, "solve", f"{task.tag}"))
     stream_to_mtz.cmd_partialator(iterations=task.iterations, model=task.model, min_res=task.get('min_res'), push_res=task.get('push_res'))
     for ns in [1, task.nshells]:
         stream_to_mtz.cmd_compare_hkl(foms=foms, nshells=ns, highres=task.get('highres'))
@@ -228,6 +230,19 @@ def merge(config):
     stream_to_mtz.cmd_report(foms=foms, nshells=task.nshells)
     stream_to_mtz.launch()
     logger.info(f'Merging launched!')
+
+def solve(config):
+    from btx.interfaces.imtz import run_dimple
+    setup = config.setup
+    task = config.solve
+    """ Run the CCP4 dimple pipeline for structure solution and refinement. """
+    taskdir = os.path.join(setup.root_dir, "solve", f"{task.tag}")
+    run_dimple(os.path.join(taskdir, f"{task.tag}.mtz"), 
+               task.pdb, 
+               taskdir,
+               queue=setup.get('queue'),
+               ncores=task.get('ncores') if task.get('ncores') is not None else 16)
+    logger.info(f'Dimple launched!')
 
 def refine_geometry(config, task=None):
     from btx.diagnostics.geoptimizer import Geoptimizer
