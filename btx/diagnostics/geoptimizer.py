@@ -259,7 +259,8 @@ class Geoptimizer:
 
         col_index = self.cols.index(metric)
         if metric=='Rsplit':
-            row_index = np.nanargmin(self.scan_results[:,col_index])
+            min_val = min([val for val in self.scan_results[:,col_index] if val>0])
+            row_index = np.where(self.scan_results[:,col_index] == min_val)[0][0]
         elif metric == 'CCstar':
             row_index = np.nanargmax(self.scan_results[:,col_index])
         print(f"Selected g{row_index}.hkl, with {metric} of {self.scan_results[row_index,col_index]}")
