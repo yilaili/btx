@@ -105,7 +105,7 @@ class Geoptimizer:
             for num in range(self.scan_results.shape[0]):
 
                 jobname = f"r{run}_g{num}"
-                jobfile = os.path.join(self.scan_dir,"temp.sh")
+                jobfile = os.path.join(self.scan_dir, f"idx_{jobname}.sh")
                 stream = os.path.join(self.scan_dir, f'r{run:04}/r{run:04}_g{num}.stream')
                 gfile = os.path.join(self.scan_dir, f"geom/shift{num}.geom")
 
@@ -167,7 +167,7 @@ class Geoptimizer:
         for num in range(self.scan_results.shape[0]):
                 
             jobname = f"g{num}"
-            jobfile = os.path.join(self.scan_dir,"temp.sh")
+            jobfile = os.path.join(self.scan_dir, f"merge_{jobname}.sh")
             instream = os.path.join(self.scan_dir, f'g{num}.stream')
             cellfile = os.path.join(self.scan_dir, f"cell/g{num}.cell")
             
@@ -259,7 +259,8 @@ class Geoptimizer:
 
         col_index = self.cols.index(metric)
         if metric=='Rsplit':
-            row_index = np.nanargmin(self.scan_results[:,col_index])
+            min_val = min([val for val in self.scan_results[:,col_index] if val>0])
+            row_index = np.where(self.scan_results[:,col_index] == min_val)[0][0]
         elif metric == 'CCstar':
             row_index = np.nanargmax(self.scan_results[:,col_index])
         print(f"Selected g{row_index}.hkl, with {metric} of {self.scan_results[row_index,col_index]}")
