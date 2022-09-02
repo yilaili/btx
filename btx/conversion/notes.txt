@@ -1,0 +1,14 @@
+$ source /reg/g/psdm/etc/psconda.sh -py3
+$ /cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python zmq_push.py -e mfxp22820 -r 13 -d Rayonix --max_events 6000
+
+$ source env_psana2.sh
+$ python zmq_pull.py -e mfxp22820 -r 13 -d Rayonix -o /cds/data/psdm/txi/txisfx00121/xtc/txisfx00121-r0013-s000-c000.xtc2 -b 256000000
+{'_det': <psana.dgramedit.NamesDef object at 0x7f14e1731fd0>, 'expt': 'txisfx00121', 'runnum': 13}
+
+$ /cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python zmq_push.py -e mfxp22820 -r 11 -d Rayonix --max_events 6000
+$ python zmq_pull.py -e mfxp22820 -r 11 -d Rayonix -o /cds/data/psdm/txi/txisfx00121/xtc/txisfx00121-r0011-s000-c000.xtc2 -b 256000000
+{'_det': <psana.dgramedit.NamesDef object at 0x7fca918cee90>, 'expt': 'txisfx00121', 'runnum': 11}
+
+$ /cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python zmq_push.py -e mfxp22820 -r 12 -d Rayonix --max_events 6000
+$ python zmq_pull.py -e mfxp22820 -r 12 -d Rayonix -o /cds/data/psdm/txi/txisfx00121/xtc/txisfx00121-r0012-s000-c000.xtc2 -b 256000000
+{'_det': <psana.dgramedit.NamesDef object at 0x7f449b59abd0>, 'expt': 'txisfx00121', 'runnum': 12}
