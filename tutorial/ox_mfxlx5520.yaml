@@ -1,5 +1,5 @@
 setup:
-  queue: 'ffbh3q'
+  queue: 'ffbh2q'
   root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/'
   exp: 'mfxlx5520'
   run: 97
@@ -41,6 +41,7 @@ find_peaks:
   nsigm: 10.0
 
 index:
+  ncores: 48
   tag_cxi: 'ox'
   tag: 'ox'
   int_radius: '3,4,5'
@@ -53,7 +54,7 @@ index:
 
 stream_analysis:
   tag: 'ox'
-  cell_only: True
+  cell_only: False
 
 merge:
   tag: 'ox'
@@ -62,7 +63,7 @@ merge:
   model: 'unity'
   foms: 'CCstar Rsplit'
   nshells: 10
-  highres: 1.9
+  highres: 2.0
 
 solve:
   tag: 'ox'
@@ -70,8 +71,8 @@ solve:
 
 refine_center:
   runs: 97 120
-  dx: -1 1 3
-  dy: -1 1 3
+  dx: -2 2 5
+  dy: -2 2 5
  
 refine_distance:
   runs: 97 120
