@@ -14,7 +14,7 @@ def parse_input():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--exp', help='Experiment name', required=True, type=str)
-    parser.add_argument('-r', '--run', help='Run number', required=True, nargs="+", type=int)
+    parser.add_argument('-r', '--runs', help='Run numbers', required=True, nargs="+", type=int)
     parser.add_argument('-s', '--starts', help='Start index for image retrieval from each run', required=True, nargs="+", type=int)
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M',  required=True, type=str)
     parser.add_argument('--max_events', help='Max events per run to retrieve', required=True, type=int, default=-1)
@@ -55,16 +55,18 @@ def main():
     socket = "tcp://127.0.0.1:5558"
     zmq_send = ZmqSender(socket)
     params = parse_input()
+    preloaded = False
+    run_index = 0
     
-    for idx in np.arange(max_events):
+    for idx in np.arange(params.max_events):
     
         if preloaded == False:
-            if np.abs(max_events - idx) < 10:
-                print(f"Not bothering to load the next run, only {max_events-idx} images away")
+            if np.abs(params.max_events - idx) < 10:
+                print(f"Not bothering to load the next run, only {params.max_events-idx} images away")
                 break
-            print(f"loading run {runs[run_index]}")
+            print(f"loading run {params.runs[run_index]}")
             psi = PsanaInterface(exp=params.exp, run=params.runs[run_index], det_type=params.det_type)
-            det_dict = retrieve_detector_info(psi.det, params.run)
+            det_dict = retrieve_detector_info(psi.det, params.runs[0])
             preloaded = True
             pcounter = params.starts[run_index]
             run_index += 1
@@ -104,7 +106,7 @@ def main():
             print(f"Sent event {idx} of {params.max_events}")
 
         else:
-            print(f"Reached end of run {run} at count {pcounter}")
+            print(f"Reached end of run {params.runs[run_index-1]} at count {pcounter}")
             preloaded = False
         
     done_dict = {"end": True}
