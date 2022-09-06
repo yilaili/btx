@@ -84,3 +84,13 @@ $ python zmq_pull.py -e mfxp22820 -r 21 -d Rayonix -o /cds/data/psdm/txi/txisfx0
 $ /cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python zmq_push_endofruns.py -e mfxp22820 -r 19 20 -d Rayonix -s 6000 6000 --max_events 6000 --record 22
 $ python zmq_pull.py -e mfxp22820 -r 22 -d Rayonix -o /cds/data/psdm/txi/txisfx00121/xtc/txisfx00121-r0022-s000-c000.xtc2 -b 256000000
 {'_det': <psana.dgramedit.NamesDef object at 0x7ff00f9b0c90>, 'expt': 'txisfx00121', 'runnum': 22}
+
+$ /cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python zmq_push_endofruns.py -e mfxp22820 -r 21 22 -d Rayonix -s 6000 6000 --max_events 6000 --record 23
+$ python zmq_pull.py -e mfxp22820 -r 23 -d Rayonix -o /cds/data/psdm/txi/txisfx00121/xtc/txisfx00121-r0023-s000-c000.xtc2 -b 256000000
+{'_det': <psana.dgramedit.NamesDef object at 0x7f39f2b20ad0>, 'expt': 'txisfx00121', 'runnum': 23}
+
+$ /cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python zmq_push_endofruns.py -e mfxp22820 -r 23 24 -d Rayonix -s 6000 6000 --max_events 6000 --record 24
+$ python zmq_pull.py -e mfxp22820 -r 24 -d Rayonix -o /cds/data/psdm/txi/txisfx00121/xtc/txisfx00121-r0024-s000-c000.xtc2 -b 256000000
+{'_det': <psana.dgramedit.NamesDef object at 0x7f5b0c2b49d0>, 'expt': 'txisfx00121', 'runnum': 24}
+
+$ for i in $(seq -f "%04g" 1 24); do smdwriter -f txisfx00121-r${i}-s000-c000.xtc2 -o smalldata/txisfx00121-r${i}-s000-c000.smd.xtc2; done
