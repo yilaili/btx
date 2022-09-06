@@ -18,6 +18,7 @@ def parse_input():
     parser.add_argument('-s', '--starts', help='Start index for image retrieval from each run', required=True, nargs="+", type=int)
     parser.add_argument('-d', '--det_type', help='Detector name, e.g epix10k2M or jungfrau4M',  required=True, type=str)
     parser.add_argument('--max_events', help='Max events per run to retrieve', required=True, type=int, default=-1)
+    parser.add_argument('--record', help='Run number to give to dgram editor', required=True, type=int)
     
     return parser.parse_args()
 
@@ -69,7 +70,6 @@ def main():
             det_dict = retrieve_detector_info(psi.det, params.runs[0])
             preloaded = True
             pcounter = params.starts[run_index]
-            run_index += 1
 
         if pcounter < psi.max_events:
             evt = psi.runner.event(psi.times[pcounter])
@@ -87,7 +87,7 @@ def main():
                 start_dict = {
                     "start": True, 
                     "exp": params.exp,
-                    "run": params.runs[0],
+                    "run": params.record,
                     "config_timestamp": psi.times[idx].time() - 10,
                     "clen" : psi.get_camera_length(pv=None)
                     }
@@ -103,11 +103,12 @@ def main():
             }
 
             zmq_send.send_zipped_pickle(data)
-            print(f"Sent event {idx} of {params.max_events}")
+            print(f"Sent event {idx} of {params.max_events}, event no. {pcounter} of run {params.runs[run_index]}")
 
         else:
             print(f"Reached end of run {params.runs[run_index-1]} at count {pcounter}")
             preloaded = False
+            run_index += 1
         
     done_dict = {"end": True}
     zmq_send.send_zipped_pickle(done_dict)
