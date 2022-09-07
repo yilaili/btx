@@ -28,6 +28,12 @@ index = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
 task_id='stream_analysis'
 stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
 
+task_id='merge'
+stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+
+task_id='solve'
+stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+
 # Draw the DAG
-run_analysis
-find_peaks >> index >> stream_analysis
+#run_analysis
+find_peaks >> index >> stream_analysis >> merge >> solve
