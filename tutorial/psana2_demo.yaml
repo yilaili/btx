@@ -62,7 +62,7 @@ merge:
   model: 'unity'
   foms: 'CCstar Rsplit'
   nshells: 10
-  highres: 1.9
+  highres: 2.4
 
 solve:
   tag: 'demo'
