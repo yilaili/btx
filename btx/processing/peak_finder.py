@@ -67,6 +67,7 @@ class PeakFinder:
             path to mask in shape of unassembled detector, optional
         """
         # set up psana interface and its detector
+        print(f"xtc_dir: {xtc_dir}")
         self.psi = Psana2Interface(exp, run, det_type, xtc_dir)
         self.iX = self.psi.det.iX.astype(np.int64)
         self.iY = self.psi.det.iY.astype(np.int64)

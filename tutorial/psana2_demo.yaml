@@ -1,11 +1,11 @@
 setup:
   queue: 'psanaq'
   root_dir: '/cds/data/psdm/txi/txisfx00121/scratch/apeck'
-  exp: 'mfxp22820'
+  exp: 'txisfx00121'
   run: 1
   det_type: 'Rayonix'
   cell: '/cds/data/psdm/txi/txisfx00121/scratch/apeck/cell/reference.cell'
-  xtc_dir: '/cds/data/psdm/txi/txisfx00121/xtc/'
+  xtc_dir: '/cds/data/psdm/txi/txisfx00121/xtc'
 
 fetch_mask:
   dataset: '/entry_1/data_1/mask'
