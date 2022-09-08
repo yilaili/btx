@@ -113,7 +113,8 @@ class Geoptimizer:
 
                 idxr = Indexer(exp=exp, run=run, det_type=det_type, tag=params.tag, tag_cxi=params.get('tag_cxi'), taskdir=self.task_dir, 
                                geom=gfile, cell=cell_file, int_rad=params.int_radius, methods=params.methods, tolerance=params.tolerance, no_revalidate=params.no_revalidate, 
-                               multi=params.multi, profile=params.profile, queue=self.queue, ncores=params.get('ncores') if params.get('ncores') is not None else 64)
+                               multi=params.multi, profile=params.profile, queue=self.queue, ncores=params.get('ncores') if params.get('ncores') is not None else 64,
+                               time=task.get('time') if task.get('time') is not None else '1:00:00')
                 idxr.tmp_exe = jobfile
                 idxr.stream = stream
                 idxr.launch(addl_command=f"echo {jobname} | tee -a {statusfile}\n",
