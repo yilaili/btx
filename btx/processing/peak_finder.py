@@ -19,7 +19,7 @@ class PeakFinder:
     def __init__(self, exp, run, det_type, outdir, event_receiver=None, event_code=None, event_logic=True,
                  tag='', mask=None, psana_mask=True, camera_length=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
-                 son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
+                 son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0, calibdir=None):
         
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -44,12 +44,12 @@ class PeakFinder:
 
         # set up class
         self.set_up_psana_interface(exp, run, det_type,
-                                    event_receiver, event_code, event_logic)
+                                    event_receiver, event_code, event_logic, calibdir=calibdir)
         self.set_up_cxi(tag)
         self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
         
     def set_up_psana_interface(self, exp, run, det_type,
-                               event_receiver=None, event_code=None, event_logic=True):
+                               event_receiver=None, event_code=None, event_logic=True, calibdir=None):
         """
         Set up PsanaInterface object and distribute events between ranks.
         
@@ -61,9 +61,12 @@ class PeakFinder:
             run number
         det_type : str
             detector name, e.g. jungfrau4M or epix10k2M
+        calibdir : str
+            directory to alternative calibration files
         """
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
-                                  event_receiver=event_receiver, event_code=event_code, event_logic=event_logic)
+                                  event_receiver=event_receiver, event_code=event_code, event_logic=event_logic,
+                                  calibdir=calibdir)
         self.psi.distribute_events(self.rank, self.size)
         self.n_events = self.psi.max_events
 
@@ -583,6 +586,7 @@ def parse_input():
     parser.add_argument('--r0', help='Radius of ring for background evaluation in pixels', required=False, type=float, default=3.0)
     parser.add_argument('--dr', help='Width of ring for background evaluation in pixels', required=False, type=float, default=2.0)
     parser.add_argument('--nsigm', help='Intensity threshold to include pixel in connected group', required=False, type=float, default=7.0)
+    parser.add_argument('--calibdir', help='Alternative calibration directory', required=False, type=str)
     
     return parser.parse_args()
 
@@ -593,7 +597,8 @@ if __name__ == '__main__':
                     event_receiver=None, event_code=None, event_logic=True, tag=params.tag,
                     mask=params.mask, psana_mask=params.psana_mask, min_peaks=params.min_peaks, max_peaks=params.max_peaks,
                     npix_min=params.npix_min, npix_max=params.npix_max, amax_thr=params.amax_thr, atot_thr=params.atot_thr, 
-                    son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm)
+                    son_min=params.son_min, peak_rank=params.peak_rank, r0=params.r0, dr=params.dr, nsigm=params.nsigm,
+                    calibdir=params.calibdir)
     pf.find_peaks()
     pf.curate_cxi()
     pf.summarize()
