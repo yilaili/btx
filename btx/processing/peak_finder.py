@@ -17,7 +17,7 @@ class PeakFinder:
     """
     
     def __init__(self, exp, run, det_type, outdir, event_receiver=None, event_code=None, event_logic=True,
-                 tag='', mask=None, psana_mask=True, camera_length=None,
+                 which_dark=None, tag='', mask=None, psana_mask=True, camera_length=None,
                  min_peaks=2, max_peaks=2048, npix_min=2, npix_max=30, amax_thr=80., atot_thr=120., 
                  son_min=7.0, peak_rank=3, r0=3.0, dr=2.0, nsigm=7.0):
         
@@ -44,12 +44,12 @@ class PeakFinder:
 
         # set up class
         self.set_up_psana_interface(exp, run, det_type,
-                                    event_receiver, event_code, event_logic)
+                                    event_receiver, event_code, event_logic, which_dark=which_dark)
         self.set_up_cxi(tag)
         self.set_up_algorithm(mask_file=mask, psana_mask=psana_mask)
         
     def set_up_psana_interface(self, exp, run, det_type,
-                               event_receiver=None, event_code=None, event_logic=True):
+                               event_receiver=None, event_code=None, event_logic=True, which_dark=None):
         """
         Set up PsanaInterface object and distribute events between ranks.
         
@@ -61,9 +61,12 @@ class PeakFinder:
             run number
         det_type : str
             detector name, e.g. jungfrau4M or epix10k2M
+        which_dark : int
+            1 or 2 for the first and second dark, respectively; None for neither (or both)
         """
         self.psi = PsanaInterface(exp=exp, run=run, det_type=det_type,
-                                  event_receiver=event_receiver, event_code=event_code, event_logic=event_logic)
+                                  event_receiver=event_receiver, event_code=event_code, 
+                                  event_logic=event_logic, which_dark=which_dark)
         self.psi.distribute_events(self.rank, self.size)
         self.n_events = self.psi.max_events
 
@@ -304,12 +307,14 @@ class PeakFinder:
         start_idx, end_idx = self.psi.counter, self.psi.max_events
         outh5 = h5py.File(self.fname,"r+")
         empty_images = 0
+        self.n_selected = 0 # number of images processed based on light/dark selection
 
         for idx in np.arange(start_idx, end_idx):
 
             # retrieve event and find out if we skip it
             evt = self.psi.runner.event(self.psi.times[idx])
-            if not self.psi.skip_event(evt):
+            if not self.psi.skip_event(evt, idx):
+                print(f"Image {idx}, selecting event")
 
                 # retrieve calibrated image
                 self.psi.get_timestamp(evt.get(EventId))
@@ -317,6 +322,7 @@ class PeakFinder:
                 if img is None:
                     empty_images += 1
                     continue
+                self.n_selected += 1
 
                 # search for peaks and store if found
                 peaks = self.find_peaks_event(img)
@@ -340,7 +346,9 @@ class PeakFinder:
                         self.powder_misses = img
                     else:
                         self.powder_misses = np.maximum(self.powder_misses, img)
-            
+            else:
+                print(f"Image {idx}, skipping event")
+
             self.psi.counter+=1
             if self.psi.counter == self.psi.max_events:
                 break
@@ -359,13 +367,15 @@ class PeakFinder:
         self.n_hits_per_rank = self.comm.gather(self.n_hits, root=0)
         self.n_hits_total = self.comm.reduce(self.n_hits, MPI.SUM)
         self.n_events_per_rank = self.comm.gather(self.n_events, root=0)
+        self.n_selected_total = self.comm.reduce(self.n_selected, MPI.SUM)
         powder_hits_all = np.max(np.array(self.comm.gather(self.powder_hits, root=0)), axis=0)
         powder_misses_all = np.max(np.array(self.comm.gather(self.powder_misses, root=0)), axis=0)
 
         if self.rank == 0:
             # write summary file
             with open(os.path.join(self.outdir, f'peakfinding{self.tag}.summary'), 'w') as f:
-                f.write(f"Number of events processed: {self.n_events_per_rank[-1]}\n")
+                f.write(f"Number of events in run: {self.n_events_per_rank[-1]}\n")
+                f.write(f"Number of events selected and processed: {self.n_selected_total}\n")
                 f.write(f"Number of hits found: {self.n_hits_total}\n")
                 f.write(f"Fractional hit rate: {(self.n_hits_total/self.n_events_per_rank[-1]):.2f}\n")
                 f.write(f'No. hits per rank: {self.n_hits_per_rank}')
