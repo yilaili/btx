@@ -1,5 +1,5 @@
 setup:
-  queue: 'ffbh2q'
+  queue: 'anaq'
   root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/'
   exp: 'mfxlx5520'
   run: 97
@@ -71,10 +71,10 @@ solve:
 
 refine_center:
   runs: 97 120
-  dx: -2 2 5
-  dy: -2 2 5
+  dx: -1.0 1.0 5
+  dy: -1.0 1.0 5
  
 refine_distance:
   runs: 97 120
-  dz: -0.001 0.001 5
+  dz: -0.002 0.002 5
 

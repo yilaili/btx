@@ -1,9 +1,13 @@
 setup:
-  queue: 'anaq'
+  queue: 'ffbh2q'
   root_dir: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/'
   exp: 'mfxlx5520'
-  run: 97
+  run: 146
   det_type: 'Rayonix'
+  event_receiver: 'evr0'
+  event_code: 205
+  event_logic: False
+  which_dark: 2
   cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/cco.cell'
 
 fetch_mask:
@@ -26,7 +30,7 @@ opt_geom:
   threshold: 1000000
 
 find_peaks:
-  tag: 'red'
+  tag: 'dark2'
   psana_mask: False
   min_peaks: 10
   max_peaks: 2048
@@ -42,8 +46,8 @@ find_peaks:
 
 index:
   ncores: 48
-  tag_cxi: 'red'
-  tag: 'red'
+  tag_cxi: 'dark2'
+  tag: 'dark2'
   int_radius: '3,4,5'
   methods: 'mosflm,xds,xgandalf'
   cell: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/cco.cell'
@@ -53,11 +57,11 @@ index:
   profile: True
 
 stream_analysis:
-  tag: 'red'
-  cell_only: False
+  tag: 'dark2'
+  cell_only: True
 
 merge:
-  tag: 'red'
+  tag: 'dark2'
   symmetry: '2/m_uab'
   iterations: 1
   model: 'unity'
@@ -66,15 +70,15 @@ merge:
   highres: 2.0
 
 solve:
-  tag: 'red'
+  tag: 'dark2'
   pdb: '/cds/data/drpsrcf/mfx/mfxlx5520/scratch/apeck/cell/5NDC.pdb'
 
 refine_center:
-  runs: 121 145
-  dx: -1 1 5
-  dy: -1 1 5
+  runs: 146 290 5
+  dx: -2 2 5
+  dy: -2 2 5
  
 refine_distance:
-  runs: 121 145
+  runs: 146 290
   dz: -0.002 0.002 5
 
