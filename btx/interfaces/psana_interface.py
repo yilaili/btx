@@ -109,8 +109,11 @@ class PsanaInterface:
         """
         ebeam = psana.Detector('EBeam')
         photon_energy = ebeam.get(evt).ebeamPhotonEnergy()
-        lambda_m =  1.23984197386209e-06 / photon_energy # convert to meters using e=hc/lambda
-        return lambda_m * 1e10
+        if np.isinf(photon_energy):
+            return self.get_wavelength()
+        else:
+            lambda_m =  1.23984197386209e-06 / photon_energy # convert to meters using e=hc/lambda
+            return lambda_m * 1e10
 
     def estimate_distance(self):
         """
