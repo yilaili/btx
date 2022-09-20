@@ -110,7 +110,9 @@ MAIN_PY="/cds/sw/ds/ana/conda1/inst/envs/ana-4.0.38-py3/bin/python ${MAIN_PY}"
 fi
 
 UUID=$(cat /proc/sys/kernel/random/uuid)
-TMP_EXE="${SCRIPT_DIR}/task_${UUID}.sh"
+TMP_DIR="${HOME}/.btx/"
+mkdir -p $TMP_DIR
+TMP_EXE="${TMP_DIR}/task_${UUID}.sh"
 
 #Submit to SLURM
 sbatch << EOF
