@@ -51,7 +51,7 @@ class eLogInterface:
 
     def update_png(self, item, task, image):
         if task == 'powder':
-            source_subdir = 'powder/figs/
+            source_subdir = 'powder/figs/'
             target_subdir = f'runs/{item}/'
             source_filename = f'{image}_{item}.png'
         elif task == 'geom':
