@@ -30,7 +30,6 @@ def main():
     shutil.copy2(config_filepath, config.setup.root_dir)
     # Call 'task' function if it exists.
     try:
-        print(globals())
         globals()[task]
     except Exception as e:
         print(f'{task} not found.')
