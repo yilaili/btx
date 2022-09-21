@@ -37,7 +37,7 @@ class eLogInterface:
         if os.path.isfile(f'{source_dir}dimple.out'):
             shutil.copytree(self.btx_dir(subdir='misc/uglymol/'), target_dir)
         for filetype in ['pdb', 'mtz']:
-            if os.path.isfile(f'{source_dir}final.f'{filetype}'):
+            if os.path.isfile(f'{source_dir}final.{filetype}'):
                 os.makedirs(target_dir, exist_ok=True)
                 shutil.copy2(f'{source_dir}final.f"{filetype}', f'{target_dir}final.f"{filetype}')
 
