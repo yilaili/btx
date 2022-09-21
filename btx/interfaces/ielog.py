@@ -95,5 +95,6 @@ class eLogInterface:
             sample_list.append(png.split('/')[-1].split('_')[-1].split('.')[0])
         for task in ['merge', 'solve']:
             for sample in glob(f'{self.source_dir(subdir=f"{task}/")}*'):
-                sample_list.append(sample.split('/')[-1])
+                if os.path.isdir(sample):
+                    sample_list.append(sample.split('/')[-1])
         return np.unique(sample_list)
