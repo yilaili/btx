@@ -108,7 +108,7 @@ Shift+F = full screen
     V = new UM.Viewer({viewer: "viewer", hud: "hud", help: "help"});
     V.load_pdb("final.pdb");
     GemmiMtz().then(function(Module) {
-      UM.load_maps_from_mtz(Module, V, "final.mtz", ['FWT', 'PHWT', 'DELFWT', 'PHDELFWT']);
+      UM.load_maps_from_mtz(Module, V, "final.mtz", ['FWT', 'PHWT', 'DELFWT', 'PHDELWT']);
     });
 </script>
 
