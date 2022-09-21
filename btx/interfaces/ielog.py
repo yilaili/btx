@@ -33,11 +33,11 @@ class eLogInterface:
 
     def update_uglymol(self, sample):
         source_dir = f'{self.source_dir(subdir=f"solve/{sample}/")}'
-        target_dir = f'{self.target_dir(subdir=f"samples/{sample}/map/")}'
+        target_dir = f'{self.target_dir(subdir=f"samples/{sample}_map/")}'
         if os.path.isfile(f'{source_dir}dimple.out'):
             shutil.copytree(self.btx_dir(subdir='misc/uglymol/'), target_dir)
         for filetype in ['pdb', 'mtz']:
-            if os.path.isfile(f'{source_dir}final.f"{filetype}'):
+            if os.path.isfile(f'{source_dir}final.f'{filetype}'):
                 os.makedirs(target_dir, exist_ok=True)
                 shutil.copy2(f'{source_dir}final.f"{filetype}', f'{target_dir}final.f"{filetype}')
 
