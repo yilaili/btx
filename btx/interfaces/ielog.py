@@ -39,7 +39,7 @@ class eLogInterface:
         for filetype in ['pdb', 'mtz']:
             if os.path.isfile(f'{source_dir}final.{filetype}'):
                 os.makedirs(target_dir, exist_ok=True)
-                shutil.copy2(f'{source_dir}final.f"{filetype}', f'{target_dir}final.f"{filetype}')
+                shutil.copy2(f'{source_dir}final.{filetype}', f'{target_dir}final.{filetype}')
 
     def update_html(self, png_list, subdir):
         with open(f'{self.target_dir(subdir=f"{subdir}")}report.html', 'w') as hfile:
