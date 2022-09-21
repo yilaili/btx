@@ -304,3 +304,12 @@ def refine_distance(config):
     task.dz = tuple([float(elem) for elem in task.dz.split()])
     task.dz = np.linspace(task.dz[0], task.dz[1], int(task.dz[2]))
     refine_geometry(config, task)
+
+def elog_display(config):
+    from btx.interfaces.ielog import eLogInterface
+    setup = config.setup
+    """ Updates the summary page in the eLog with most recent results. """
+    logger.info(f'Updating the reports in the eLog summary tab.')
+    eli = eLogInterface(setup)
+    eli.update_summary()
+    logger.debug('Done!')
