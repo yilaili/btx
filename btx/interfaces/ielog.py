@@ -11,20 +11,19 @@ class eLogInterface:
 
     def update_summary(self):
         for run in self.list_processed_runs():
-            os.makedirs(self.target_dir(subdir=f"runs/{run}"), exist_ok=True)
             self.update_run(run)
         for sample in self.list_processed_samples():
-            os.makedirs(self.target_dir(subdir=f"samples/stats_{sample}"), exist_ok=True)
-            os.makedirs(self.target_dir(subdir=f"samples/maps_{sample}"), exist_ok=True)
             self.update_sample(sample)
 
     def update_run(self, run):
+        os.makedirs(self.target_dir(subdir=f"runs/{run}"), exist_ok=True)
         self.update_png(run, 'geom', 'powder')
         self.update_png(run, 'powder', 'powder')
         self.update_png(run, 'powder', 'stats')
         self.update_html(['geom', 'powder', 'stats'], f"runs/{run}/")
 
     def update_sample(self, sample):
+        os.makedirs(self.target_dir(subdir=f"samples/stats_{sample}"), exist_ok=True)
         self.update_png(sample, 'index', 'peakogram')
         self.update_png(sample, 'index', 'cell')
         self.update_png(sample, 'merge', 'Rsplit')
@@ -36,6 +35,8 @@ class eLogInterface:
         source_dir = f'{self.source_dir(subdir=f"solve/{sample}/")}'
         target_dir = f'{self.target_dir(subdir=f"samples/maps_{sample}/")}'
         if os.path.isfile(f'{source_dir}dimple.out'):
+            if os.path.isdir(target_dir):
+                shutil.rmtree(target_dir)
             shutil.copytree(self.btx_dir(subdir='misc/uglymol/'), target_dir)
         for filetype in ['pdb', 'mtz']:
             if os.path.isfile(f'{source_dir}final.{filetype}'):
