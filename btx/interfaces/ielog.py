@@ -61,11 +61,11 @@ class eLogInterface:
             source_filename = f'{item}.png'
         elif task == 'index':
             source_subdir = 'index/figs/'
-            target_subdir = f'samples/{item}/'
+            target_subdir = f'samples/stats_{item}/'
             source_filename = f'{image}_{item}.png'
         elif task == 'merge':
             source_subdir = f'merge/{item}/figs/'
-            target_subdir = f'samples/{item}/'
+            target_subdir = f'samples/stats_{item}/'
             source_filename = f'{item}_{image}.png'
         source_path = f'{self.source_dir(subdir=f"{source_subdir}")}{source_filename}'
         target_path = f'{self.target_dir(subdir=f"{target_subdir}")}{image}.png'
