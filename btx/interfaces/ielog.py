@@ -46,7 +46,7 @@ class eLogInterface:
             hfile.write('<!doctype html><html><head></head><body>')
             for png in png_list:
                 if os.path.isfile(f'{self.target_dir(subdir=f"{subdir}")}{png}.png'):
-                    hfile.write(f"<img src='{png}' width=1000><br>")
+                    hfile.write(f"<img src='{png}.png' width=1000><br>")
             hfile.write('</body></html>')
 
     def update_png(self, item, task, image):
