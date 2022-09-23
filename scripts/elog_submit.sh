@@ -94,6 +94,11 @@ esac
 
 QUEUE=${QUEUE:='ffbh3q'}
 CORES=${CORES:=1}
+# TODO: find_peaks needs to be handled from ischeduler. For now we do this...
+if [ ${TASK} != 'find_peaks' ]; then
+  CORES=1
+fi
+
 EXPERIMENT=${EXPERIMENT:='None'}
 RUN_NUM=${RUN_NUM:='None'}
 THIS_CONFIGFILE=${CONFIGFILE}

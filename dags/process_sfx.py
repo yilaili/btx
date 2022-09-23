@@ -29,11 +29,14 @@ task_id='stream_analysis'
 stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
 
 task_id='merge'
-stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+merge = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
 
 task_id='solve'
-stream_analysis = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+solve = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
+
+task_id='elog_display'
+elog_display = JIDSlurmOperator(task_id=task_id, dag=dag, run_at='SRCF_FFB')
 
 # Draw the DAG
 #run_analysis
-find_peaks >> index >> stream_analysis >> merge >> solve
+find_peaks >> index >> stream_analysis >> merge >> solve >> elog_display
