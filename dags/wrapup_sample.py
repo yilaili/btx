@@ -28,5 +28,9 @@ solve = JIDSlurmOperator( task_id=task_id, dag=dag, run_at='SRCF_FFB')
 task_id='elog_display'
 elog_display = JIDSlurmOperator(task_id=task_id, dag=dag, run_at='SRCF_FFB')
 
+task_id='clean_up'
+clean_up = JIDSlurmOperator(task_id=task_id, dag=dag, run_at='SRCF_FFB')
+
 # Draw the DAG
 stream_analysis >> merge >> solve >> elog_display
+stream_analysis >> clean_up
