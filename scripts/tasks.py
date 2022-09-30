@@ -185,7 +185,7 @@ def stream_analysis(config):
         write_cell_file(st.cell_params, os.path.join(celldir, f"{task.tag}.cell"), input_file=setup.get('cell'))
         logger.info(f'Wrote updated CrystFEL cell file to {celldir}')
         stream_cat = os.path.join(taskdir, f"{task.tag}.stream")
-        os.system(f"cat {stream_files} >> {stream_cat}")
+        os.system(f"cat {stream_files} > {stream_cat}")
         logger.info(f'Concatenated all stream files to {task.tag}.stream')
         logger.debug('Done!')
 
@@ -312,4 +312,12 @@ def elog_display(config):
     logger.info(f'Updating the reports in the eLog summary tab.')
     eli = eLogInterface(setup)
     eli.update_summary()
+    logger.debug('Done!')
+
+def clean_up(config):
+    setup = config.setup
+    task = config.clean_up
+    taskdir = os.path.join(setup.root_dir, 'index')
+    if os.path.isdir(taskdir):
+        os.system(f"rm -f {taskdir}/r*/*{task.tag}.cxi")
     logger.debug('Done!')
